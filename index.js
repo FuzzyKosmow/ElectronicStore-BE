@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 const usersRouter = require('./routes/users');
 const employeesRouter = require('./routes/employees');
 const mongoose = require('mongoose');
@@ -98,6 +98,6 @@ mongoose.connect(process.env.MONGO_DB_LOCAL)
     });
 
 
-app.listen(port, () => {
+app.listen(port, "0.0.0.0", () => {
     console.log(`Server is running on port ${port}`);
 });
