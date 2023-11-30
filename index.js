@@ -14,18 +14,17 @@ const User = require('./models/user');
 const ExpressError = require('./utils/ExpressError');
 const dotenv = require('dotenv').config();
 const RedisStore = require("connect-redis").default
-const redisClient = require('redis').createClient(
+const createClient = require('redis').createClient;
+const redisClient = createClient(
     {
         password: process.env.REDIS_PASSWORD,
         socket: {
             host: process.env.REDIS_HOST,
             port: process.env.REDIS_PORT
-        }
+        },
+
     }
 )
-redisClient.connect().catch((err) => {
-    console.log("Redis error: ", err);
-})
 
 // Redis store
 const store = new RedisStore({
@@ -81,6 +80,11 @@ app.use((err, req, res, next) => {
 
 
 
+redisClient.connect().catch((err) => {
+    console.log("Redis error: ", err);
+}).then(() => {
+    console.log("Redis connected. Host: ", process.env.REDIS_HOST);
+})
 
 //MongoDB connection. 
 mongoose.connect(process.env.MONGO_DB_LOCAL)
