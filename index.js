@@ -14,7 +14,8 @@ const User = require('./models/user');
 const ExpressError = require('./utils/ExpressError');
 const dotenv = require('dotenv').config();
 const RedisStore = require("connect-redis").default
-const redisClient = require('redis').createClient(
+const createClient = require('redis').createClient;
+const redisClient = createClient(
     {
         password: process.env.REDIS_PASSWORD,
         socket: {
@@ -23,9 +24,12 @@ const redisClient = require('redis').createClient(
         }
     }
 )
-redisClient.connect().catch((err) => {
-    console.log("Redis error: ", err);
-})
+
+redisClient.connect().then(() => {
+    console.log('Redis connected');
+}).catch((err) => {
+    console.log(`Redis error: ${err}`);
+});
 
 // Redis store
 const store = new RedisStore({
