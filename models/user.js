@@ -19,6 +19,11 @@ const UserSchema = new Schema({
 
 
 UserSchema.plugin(passportLocalMongoose);
-//Modify serialize and deserialize to include a role
+//Post middleware to delete image from cloudinary when employee is deleted.
+UserSchema.post('findOneAndDelete', async function (employee) {
+    if (employee.avatar) {
+        await cloudinary.uploader.destroy(employee.avatar.filename);
+    }
+});
 
 module.exports = mongoose.model('User', UserSchema);
