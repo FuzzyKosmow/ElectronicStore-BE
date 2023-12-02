@@ -1,6 +1,6 @@
 const Employee = require('../models/employee');
 const passport = require('passport');
-
+const Image = require('../models/image');
 
 module.exports.getEmployees = async (req, res) => {
     try {
@@ -11,38 +11,6 @@ module.exports.getEmployees = async (req, res) => {
         console.log(e);
     }
 }
-module.exports.addEmployee = async (req, res) => {
-    try {
-        // Require name. Additional attributes: email, phone, address, gender, dateOfBirth, avatar
-        const { name, phoneNumber, address, gender, birthDate, avatar } = req.body;
-        // Validate that at least the "name" attribute is present
-        if (!name) {
-            return res.status(400).json({ error: 'Name is required in the request body.' });
-        }
-
-        // Create a new employee object with the provided attributes
-        const employee = new Employee({
-            name: name,
-            address: address,
-            phoneNumber: phoneNumber,
-            birthDate: birthDate,
-            gender: gender,
-            avatar: avatar,
-        });
-
-        // Save the employee to the database
-        await employee.save();
-        //Todo: Handle case where employee may not have account/ not needing one.
-
-
-        // Respond with success message and the created employee
-        res.json({ msg: 'Employee added', employee });
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-};
-
 module.exports.getEmployee = async (req, res) => {
     try {
         const { id } = req.params;
@@ -56,6 +24,56 @@ module.exports.getEmployee = async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 }
+module.exports.addEmployee = async (req, res) => {
+    const { name, phoneNumber, address, gender, birthDate, salary } = req.body;
+
+    // Validate that at least the "name" attribute is present
+    if (!name) {
+        return res.status(400).json({ error: 'Name is required in the request body.' });
+    }
+
+    // Check if the file was successfully uploaded
+    if (!req.file || !req.file.path || !req.file.filename) {
+        console.log(req.file);
+        return res.status(400).json({ error: 'File upload failed. Make sure to upload a valid image.' });
+    }
+
+    // Get url and filename from cloudinary
+    const { path, filename } = req.file;
+
+    // Create a new image object with the provided attributes
+    const avatar = new Image(
+        {
+            fileName: filename,
+            url: path,
+        }
+    );
+    // Create a new employee object with the provided attributes
+    const employee = new Employee({
+        name: name,
+        address: address,
+        phoneNumber: phoneNumber,
+        birthDate: birthDate,
+        gender: gender,
+        salary: salary,
+    });
+
+    // Add the image to the employee's avatar field
+    employee.avatar = avatar;
+    //Todo: Handle case employee without account
+    try {
+        // Save the employee to the database
+        await employee.save();
+
+        // Respond with success message and the created employee
+        res.json({ msg: 'Employee added', employee });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Internal Server Error' });
+    } ``
+};
+
+
 module.exports.deleteEmployee = async (req, res) => {
     try {
         const { id } = req.params;
@@ -74,7 +92,7 @@ module.exports.updateEmployee = async (req, res) => {
     try {
         const { id } = req.params;
         const updateFields = req.body;
-
+        console.log(req.body);
         // Find the employee by ID
         const employee = await Employee.findById(id);
 
@@ -82,7 +100,22 @@ module.exports.updateEmployee = async (req, res) => {
         if (!employee) {
             return res.status(404).json({ error: 'Employee not found' });
         }
+        //Check if user upload any image
+        if (req.file) {
+            // Get url and filename from cloudinary
+            const { path, filename } = req.file;
 
+            // Create a new image object with the provided attributes
+            const avatar = new Image(
+                {
+                    fileName: filename,
+                    url: path,
+                }
+            );
+            //Todo: Change it to replace old image later. For now it just update
+            // Add the image to the employee's avatar field
+            employee.avatar = avatar;
+        }
         // Update the employee fields based on the request body
         for (const [key, value] of Object.entries(updateFields)) {
             // Check if the key exists in the employee model schema before updating
