@@ -14,19 +14,19 @@ module.exports.registerEmployee = async (req, res, next) => {
                 name: username,
             }
         );
+        //Check if employee exists
+        const employeeExists = await Employee.exists({ name: username });
+        if (employeeExists) {
+            return res.json({ msg: 'Employee already exists', success: false });
+        }
         await employee.save();
         const user = new User({ username, role: 'employee' });
         user.employeeId = employee._id;
         //Register
         const registeredUser = await User.register(user, password);
-        //Log in the user
-        req.login(registeredUser, err => {
-            if (err) {
-                return next(err);
-            }
-            //Send json information
-            res.json({ msg: 'Employee registered', employeeId: employee._id, username: username, role: 'employee' });
-        });
+
+        res.json({ msg: 'Employee registered', employeeId: employee._id, username: username, role: 'employee' });
+
     }
     catch (e) {
         res.json({ msg: 'Employee registration failed', error: e });
@@ -42,6 +42,8 @@ module.exports.registerAdmin = async (req, res, next) => {
                 name: username,
             }
         );
+        //Check if user exists
+        const userExists = await User.exists({ username: username });
         await employee.save();
         const user = new User({ username, role: 'admin' });
         user.employeeId = employee._id;
@@ -64,23 +66,36 @@ module.exports.registerAdmin = async (req, res, next) => {
 
 
 
-module.exports.login = (req, res, next) => {
-    passport.authenticate('local', { failureFlash: true, failureRedirect: '/login' })(req, res, function () {
-        const response = {
-            employeeId: req.user.employeeId,
-            username: req.user.username,
-            role: req.user.role
+module.exports.login = (req, res) => {
+    passport.authenticate('local', function (err, user, info) {
+        if (err) {
+            console.log(err);
+            return next(err);
         }
-        res.json(response);
-    });
+        if (!user) {
+            return res.json({ msg: 'Invalid username or password', success: false });
+        }
+        req.logIn(user, function (err) {
+            if (err) {
+                console.log(err);
+                return next(err);
+            }
+            //Set user
+            res.user = user;
+            res.json({ msg: 'Login success', success: true, employeeId: user.employeeId, username: user.username, role: user.role });
+        });
+    })(req, res);
 };
 
 module.exports.logout = (req, res, next) => {
     req.logout(function (err) {
         if (err) {
             console.log(err);
+            return next(err);
         }
         req.session.destroy();
-        res.json({ msg: 'Logout success' });
+        //Set user
+        res.user = null;
+        res.json({ msg: 'Logout success', success: true });
     });
 };
