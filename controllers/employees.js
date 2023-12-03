@@ -31,23 +31,6 @@ module.exports.addEmployee = async (req, res) => {
     if (!name) {
         return res.status(400).json({ error: 'Name is required in the request body.' });
     }
-
-    // Check if the file was successfully uploaded
-    if (!req.file || !req.file.path || !req.file.filename) {
-        console.log(req.file);
-        return res.status(400).json({ error: 'File upload failed. Make sure to upload a valid image.' });
-    }
-
-    // Get url and filename from cloudinary
-    const { path, filename } = req.file;
-
-    // Create a new image object with the provided attributes
-    const avatar = new Image(
-        {
-            fileName: filename,
-            url: path,
-        }
-    );
     // Create a new employee object with the provided attributes
     const employee = new Employee({
         name: name,
@@ -57,9 +40,26 @@ module.exports.addEmployee = async (req, res) => {
         gender: gender,
         salary: salary,
     });
+    // Check if the file was successfully uploaded
+    if (!req.file || !req.file.path || !req.file.filename) {
+        console.log("No file uploaded. Avatar will be set to null.");
+        employee.avatar = null;
+    }
+    else {
+        // Get url and filename from cloudinary
+        const { path, filename } = req.file;
+        // Create a new image object with the provided attributes
+        const avatar = new Image(
+            {
+                fileName: filename,
+                url: path,
+            }
+        );
+        // Add the image to the employee's avatar field
+        employee.avatar = avatar;
+    }
 
-    // Add the image to the employee's avatar field
-    employee.avatar = avatar;
+
     //Todo: Handle case employee without account
     try {
         // Save the employee to the database
