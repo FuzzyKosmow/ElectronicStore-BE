@@ -4,19 +4,19 @@ const User = require('../models/user');
 const ExpressError = require('../utils/ExpressError');
 const router = express.Router();
 const passport = require('passport');
-const { storeReturnTo } = require('../middleware');
 const usersController = require('../controllers/users');
-const { alreadyLoggedIn, requireLogginEmployee } = require('../middleware');
+const { getCurrentUser } = require('../middleware/auth');
 
 router.route('/register')
     .post(usersController.registerEmployee);
 router.route('/login')
+    .get(getCurrentUser)
     .post(usersController.login);
 router.route('/register/admin')
     .post(usersController.registerAdmin);
 router.post('/logout', usersController.logout);
 router.get('/', (req, res) => {
-    res.send('Hello. User : ' + req.user);
+
 })
 
 
