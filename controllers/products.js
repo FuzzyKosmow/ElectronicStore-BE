@@ -1,6 +1,7 @@
 
 const Product = require('../models/product');
 const pageLimit = 30;
+const Image = require('../models/image');
 module.exports.getProducts = async (req, res) => {
     //Implement pagination
     const page = parseInt(req.query.page);
@@ -39,6 +40,27 @@ module.exports.getProducts = async (req, res) => {
 }
 module.exports.addProduct = async (req, res) => {
     const product = new Product(req.body);
+    product.images = [];
+    // Check if the file was successfully uploaded
+    if (!req.files || !req.files.length) {
+        console.log("No file uploaded. Product images will be set to null.");
+        product.images = null;
+    }
+    else {
+        for (const file of req.files) {
+            // Get url and filename from cloudinary
+            const { path, filename } = file;
+            // Create a new image object with the provided attributes
+            const image = new Image(
+                {
+                    fileName: filename,
+                    url: path,
+                }
+            );
+            // Add the image to the product's images field
+            product.images.push(image);
+        }
+    }
     try {
         const savedProduct = await product.save();
         res.json(savedProduct);
