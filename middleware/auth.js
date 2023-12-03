@@ -29,4 +29,13 @@ function authorize(rolesAllowed) {
 
     };
 }
+module.exports.getCurrentUser = (req, res, next) => {
+    //If logged in , return username and role.
+    console.log(req.body);
+    if (req.isAuthenticated()) {
+        const { username, role } = req.user;
+        return res.json({ user: { username, role } });
+    }
+    res.json({ user: null });
+}
 module.exports.authorize = authorize;
