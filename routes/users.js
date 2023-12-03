@@ -12,9 +12,13 @@ router.route('/register')
 router.route('/login')
     .get(getCurrentUser)
     .post(usersController.login);
-router.route('/register/admin')
-    .post(usersController.registerAdmin);
+
 router.post('/logout', usersController.logout);
+//Register admin only in development
+if (process.env.NODE_ENV !== "production") {
+    router.route('/register/admin')
+        .post(usersController.registerAdmin);
+};
 router.get('/', (req, res) => {
 
 })
