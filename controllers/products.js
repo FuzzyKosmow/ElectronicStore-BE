@@ -4,8 +4,8 @@ const pageLimit = 30;
 const Image = require('../models/image');
 module.exports.getProducts = async (req, res) => {
     //Implement pagination
-    const page = parseInt(req.query.page);
-    const limit = parseInt(req.query.limit);
+    let page = parseInt(req.query.page);
+    let limit = parseInt(req.query.limit);
     if (page < 1) {
         return res.status(400).json({ error: 'Invalid page number, should start with 1' });
     }
