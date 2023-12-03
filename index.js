@@ -9,6 +9,7 @@ const path = require('path');
 const cors = require('cors');
 const usersRouter = require('./routes/users');
 const employeesRouter = require('./routes/employees');
+const productsRouter = require('./routes/products');
 const mongoose = require('mongoose');
 const methodOverride = require('method-override');
 const morgan = require('morgan');
@@ -56,7 +57,6 @@ const sessionConfig = {
 }
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-
 app.use(cors());
 app.use(setCurrentUser);
 app.use(session(sessionConfig));
@@ -81,7 +81,7 @@ app.use(morgan('tiny'));
 
 
 //Routes
-// app.use('/api/products', productsRouter);
+app.use('/api/products', productsRouter);
 app.use('/api/employees', employeesRouter);
 app.use('/api/', usersRouter);
 app.use('/test', require('./routes/testSite'));
