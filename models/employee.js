@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-const { imageSchema } = require('./image');
+const { ImageSchema } = require('./image');
 const { cloudinary } = require('../cloudinary');
 const User = require('./user');
 const EmployeeSchema = new Schema({

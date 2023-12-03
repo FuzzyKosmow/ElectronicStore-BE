@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-const ImageSChema = require('./image');
+const { ImageSchema } = require('./image');
 
 const productSchema = new Schema({
     productName: {
@@ -32,7 +32,7 @@ const productSchema = new Schema({
         required: true
     },
     images: {
-        type: [ImageSChema]
+        type: [ImageSchema],
     },
 });
 
