@@ -92,7 +92,6 @@ module.exports.updateEmployee = async (req, res) => {
     try {
         const { id } = req.params;
         const updateFields = req.body;
-        console.log(req.body);
         // Find the employee by ID
         const employee = await Employee.findById(id);
 
