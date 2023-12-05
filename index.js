@@ -7,9 +7,12 @@ const app = express();
 const port = process.env.PORT || 3000;
 const path = require('path');
 const cors = require('cors');
+
 const usersRouter = require('./routes/users');
 const employeesRouter = require('./routes/employees');
 const productsRouter = require('./routes/products');
+const customersRouter = require('./routes/customers');
+
 const mongoose = require('mongoose');
 const methodOverride = require('method-override');
 const morgan = require('morgan');
@@ -83,6 +86,7 @@ app.use(morgan('tiny'));
 //Routes
 app.use('/api/products', productsRouter);
 app.use('/api/employees', employeesRouter);
+app.use('/api/customers', customersRouter);
 app.use('/api/', usersRouter);
 app.use('/test', require('./routes/testSite'));
 app.all('*', (req, res, next) => {
