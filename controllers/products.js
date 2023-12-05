@@ -6,6 +6,16 @@ module.exports.getProducts = async (req, res) => {
     //Implement pagination
     let page = parseInt(req.query.page);
     let limit = parseInt(req.query.limit);
+    const query = req.query;
+    const filter = {};
+    if (query.brand) {
+        filter.brand = query.brand;
+    }
+
+    if (query.type) {
+        filter.type = query.type;
+    }
+    //Parameters for seraching products: name, category, 
     if (page < 1) {
         return res.status(400).json({ error: 'Invalid page number, should start with 1' });
     }
@@ -16,6 +26,7 @@ module.exports.getProducts = async (req, res) => {
         page = 1;
         limit = pageLimit;
     }
+
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
     const results = {};
@@ -32,7 +43,8 @@ module.exports.getProducts = async (req, res) => {
         }
     }
     try {
-        results.results = await Product.find().limit(limit).skip(startIndex).exec();
+
+        results.results = await Product.find(filter).limit(limit).skip(startIndex).exec();
         res.json(results);
     } catch (error) {
         res.status(500).json({ error: error });
