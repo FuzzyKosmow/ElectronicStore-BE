@@ -54,7 +54,7 @@ EmployeeSchema.post('findOneAndDelete', async function (doc) {
         // Delete account
         if (user) {
             await User.findByIdAndDelete(user._id);
-
+            console.log('Employee has account. Account username: ', user.username + '. Account deleted');
         }
         else
             console.log('No user found');
