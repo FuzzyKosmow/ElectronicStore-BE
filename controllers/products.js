@@ -2,6 +2,8 @@
 const Product = require('../models/product');
 const pageLimit = 30;
 const Image = require('../models/image');
+const { cloudinary } = require('../cloudinary');
+
 //This function will convert the query to filter. Will check for the following fields:
 //brand, type, name, manufacturer, countryOrigin, sellPrice, sellPriceMin, sellPriceMax
 //In brand , name, manufacturer, countryOrigin, will use regex to find all products that contain the string
@@ -99,11 +101,12 @@ module.exports.getProducts = async (req, res) => {
     }
     try {
         results.results = await Product.find(filter).limit(limit).skip(startIndex).exec();
-        res.json(results);
+        res.json({ products: results.results, success: true });
     } catch (error) {
-        res.status(500).json({ error: error });
+        res.status(500).json({ error: error, success: false });
     }
 }
+//Accept in multi-part form data. Append images multiple times to add multiple images
 module.exports.addProduct = async (req, res) => {
     const product = new Product(req.body);
     product.images = [];
@@ -129,29 +132,110 @@ module.exports.addProduct = async (req, res) => {
     }
     try {
         const savedProduct = await product.save();
-        res.json(savedProduct);
+        res.json({ msg: 'Product added', product: savedProduct, success: true });
     } catch (error) {
-        res.status(500).json({ error: error });
+        res.status(500).json({ error: error, success: false });
     }
 }
-
+//Singular, no filter
 module.exports.getProduct = async (req, res) => {
     try {
         const { id } = req.params;
         const product = await Product.findById(id);
         if (!product) {
-            return res.status(404).json({ error: 'Product not found' });
+            return res.status(404).json({ error: 'Product not found', success: false });
         }
         res.json({ product });
     } catch (e) {
         console.error(e);
-        res.status(500).json({ error: 'Internal Server Error' });
+        res.status(500).json({ error: 'Internal Server Error', success: false });
     }
 }
 
-//Update product
+//Update product. imagesDel contains the images that will be deleted (array of image id)
+//files contains the new images that will be added (array of image)
 module.exports.updateProduct = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const product = await Product.findById(id);
+        const imagesDel = req.body.imagesDel;
+        const updateFields = req.body;
+        if (!product) {
+            return res.status(404).json({ error: 'Product not found', success: false });
+        }
+        //Update the product text fields
+        for (const [key, value] of Object.entries(updateFields)) {
+            //Check if the key exists in the product schema
+            if (product[key] != undefined) {
+                product[key] = value;
+            }
+        }
+        if (imagesDel) {
+            // Convert imagesDel to an array if it's a string
+            const imageIds = Array.isArray(imagesDel) ? imagesDel : [imagesDel];
+
+            for (const imageId of imageIds) {
+                // Images is an array of ImageSchema. Find the image where id = imageId
+                const imageIndex = product.images.findIndex(image => image._id == imageId);
+
+                if (imageIndex !== -1) {
+                    const image = product.images[imageIndex];
+
+                    // Delete image from cloudinary
+                    await cloudinary.uploader.destroy(image.fileName, function (err, res) {
+                        if (err) {
+                            console.error("Error deleting image from cloudinary: ", err);
+                        } else {
+                            console.log("Image deleted from cloudinary: ", res);
+                        }
+                    });
+
+                    // Pull the image from the product's images field
+                    product.images.splice(imageIndex, 1);
+                }
+            }
+        }
+
+        //Check if the file was successfully uploaded
+        if (!req.files) {
+            console.log("No file uploaded. Product images will not be changed.");
+        }
+        else {
+            //Add the new images
+            for (const file of req.files) {
+                // Get url and filename from cloudinary
+                const { path, filename } = file;
+                // Create a new image object with the provided attributes
+                const image = new Image(
+                    {
+                        fileName: filename,
+                        url: path,
+                    }
+                );
+                // Add the image to the product's images field
+                product.images.push(image);
+            }
+        }
+        //Save the product
+        const savedProduct = await product.save();
+        res.json({ msg: 'Product updated', product: savedProduct, success: true });
+
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Internal Server Error', success: false });
+    }
 }
 //Delete product
 module.exports.deleteProduct = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const product = await Product.findByIdAndDelete(id);
+        if (!product) {
+            return res.status(404).json({ error: 'Product not found' });
+        }
+        res.json({ msg: 'Product deleted', success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Internal Server Error', success: false });
+    }
 }
