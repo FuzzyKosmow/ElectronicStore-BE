@@ -32,6 +32,7 @@ const UploadImage = async (req, res, next) => {
         res.status(500).json({ error: 'Internal server error.' });
     }
 }
+//Wrapper class for ValidatePagination
 const ValidatePageWrapper = async (req, res, next) => {
     ValidatePagination(req, res, next, () => Employee.countDocuments());
 }
