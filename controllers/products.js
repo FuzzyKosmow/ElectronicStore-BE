@@ -52,56 +52,23 @@ function ConvertProductQuery(query) {
     return filter;
 
 }
-//This function will validate page and limit. If page or limit is invalid, will return error message 400
-const ValidatePagination = (page, limit) => {
-    if (page < 1) {
-        return res.status(400).json({ error: 'Invalid page number, should start with 1' });
-    }
-    if (limit < 1) {
-        return res.status(400).json({ error: 'Invalid limit, should be positive number' });
-    }
-    if (isNaN(page)) {
-        page = 1;
-    }
-    if (isNaN(limit)) {
-        limit = pageLimit;
-    }
-    return { page, limit };
-}
-
+//Return contains results (array of products), next (next page info), previous (previous page info) and success (boolean)
 module.exports.getProducts = async (req, res) => {
     //Implement pagination
-    let page = parseInt(req.query.page);
-    let limit = parseInt(req.query.limit);
+    const limit = req.query.limit;
+    const startIndex = req.query.startIndex;
     const query = req.query;
-    //Checking filter
+    const results = {};
+    results.next = req.results.next;
+    results.previous = req.results.previous;
+    //Filter assignment
     let filter = {};
     if (req.query) {
         filter = ConvertProductQuery(req.query);
     }
-    ///Validate page and limit then reassign it to the variable
-    const { page: newPage, limit: newLimit } = ValidatePagination(page, limit);
-    page = newPage;
-    limit = newLimit;
-    const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
-    const results = {};
-    //Setting start index
-    if (endIndex < await Product.countDocuments().exec()) {
-        results.next = {
-            page: page + 1,
-            limit: limit
-        }
-    }
-    if (startIndex > 0) {
-        results.previous = {
-            page: page - 1,
-            limit: limit
-        }
-    }
     try {
         results.results = await Product.find(filter).limit(limit).skip(startIndex).exec();
-        res.json({ products: results.results, success: true });
+        res.json({ ...results, success: true });
     } catch (error) {
         res.status(500).json({ error: error, success: false });
     }
@@ -171,9 +138,7 @@ module.exports.updateProduct = async (req, res) => {
             }
         }
         if (imagesDel) {
-            // Convert imagesDel to an array if it's a string
-            const imageIds = Array.isArray(imagesDel) ? imagesDel : [imagesDel];
-
+            const imageIds = [...imagesDel]
             for (const imageId of imageIds) {
                 // Images is an array of ImageSchema. Find the image where id = imageId
                 const imageIndex = product.images.findIndex(image => image._id == imageId);
