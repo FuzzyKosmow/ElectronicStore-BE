@@ -1,14 +1,26 @@
 const Employee = require('../models/employee');
 const passport = require('passport');
 const Image = require('../models/image');
-
+const limit = 30;
+const page = 1;
 module.exports.getEmployees = async (req, res) => {
-    try {
-        const employees = await Employee.find({});
-        res.json({ employees });
+    //Implement pagination
+    let limit = parseInt(req.query.limit);
+    const startIndex = req.query.startIndex;
+    const results = {};
+    const query = req.query;
+    const filter = {};
+    if (query.name) {
+        filter.name = query.name;
     }
-    catch (e) {
-        console.log(e);
+    results.next = req.results.next;
+    results.previous = req.results.previous;
+    try {
+
+        results.results = await Employee.find(filter).limit(limit).skip(startIndex).exec();
+        res.json(results);
+    } catch (error) {
+        res.status(500).json({ error: error });
     }
 }
 module.exports.getEmployee = async (req, res) => {
