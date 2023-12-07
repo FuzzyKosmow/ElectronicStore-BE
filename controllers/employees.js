@@ -1,11 +1,10 @@
 const Employee = require('../models/employee');
 const passport = require('passport');
 const Image = require('../models/image');
-const limit = 30;
-const page = 1;
+const { cloudinary } = require('../cloudinary');
 module.exports.getEmployees = async (req, res) => {
     //Implement pagination
-    let limit = parseInt(req.query.limit);
+    const limit = parseInt(req.query.limit);
     const startIndex = req.query.startIndex;
     const results = {};
     const query = req.query;
@@ -115,16 +114,24 @@ module.exports.updateEmployee = async (req, res) => {
         if (req.file) {
             // Get url and filename from cloudinary
             const { path, filename } = req.file;
-
-            // Create a new image object with the provided attributes
             const avatar = new Image(
                 {
                     fileName: filename,
                     url: path,
                 }
             );
-            //Todo: Change it to replace old image later. For now it just update
-            // Add the image to the employee's avatar field
+            // Remove old image from cloudinary
+            if (employee.avatar && employee.avatar.fileName) {
+                await cloudinary.uploader.destroy(employee.avatar.fileName, function (err, res) {
+                    if (err) {
+                        console.error("Error deleting image from cloudinary: ", err);
+                    }
+                    else {
+                        console.log("Image deleted from cloudinary: ", res);
+                    }
+                });
+            }
+
             employee.avatar = avatar;
         }
         // Update the employee fields based on the request body
@@ -135,7 +142,7 @@ module.exports.updateEmployee = async (req, res) => {
             }
         }
 
-        // Save the updated employee to the database
+
         await employee.save();
 
         // Respond with success message and the updated employee
