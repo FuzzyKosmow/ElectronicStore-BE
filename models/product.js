@@ -40,7 +40,7 @@ productSchema.post('findOneAndDelete', async function (doc) {
         console.log("Deleting images from cloudinary: ", doc.images);
         if (doc.images !== undefined) {
             //Convert to array
-            const images = Array.isArray(doc.images) ? doc.images : [doc.images];
+            const images = [...doc.images]
             for (const image of images) {
                 await cloudinary.uploader.destroy(image.fileName, function (err, res) {
                     if (err) {
