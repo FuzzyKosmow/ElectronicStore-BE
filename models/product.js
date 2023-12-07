@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const { ImageSchema } = require('./image');
-
+const { cloudinary } = require('../cloudinary');
 const productSchema = new Schema({
     productName: {
         type: String,
@@ -35,5 +35,25 @@ const productSchema = new Schema({
         type: [ImageSchema],
     },
 });
+productSchema.post('findOneAndDelete', async function (doc) {
+    try {
+        console.log("Deleting images from cloudinary: ", doc.images);
+        if (doc.images !== undefined) {
+            //Convert to array
+            const images = Array.isArray(doc.images) ? doc.images : [doc.images];
+            for (const image of images) {
+                await cloudinary.uploader.destroy(image.fileName, function (err, res) {
+                    if (err) {
+                        console.error("Error deleting image from cloudinary: ", err);
+                    } else {
+                        console.log("Image deleted from cloudinary: ", res);
+                    }
+                });
 
+            }
+        }
+    } catch (e) {
+        console.error("Error deleting images from cloudinary: ", e);
+    }
+});
 module.exports = mongoose.model('Product', productSchema);
