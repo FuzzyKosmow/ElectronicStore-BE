@@ -17,7 +17,7 @@ module.exports.getEmployees = async (req, res) => {
     try {
 
         results.results = await Employee.find(filter).limit(limit).skip(startIndex).exec();
-        res.json(results);
+        res.status(200).json({ results, success: true });
     } catch (error) {
         res.status(500).json({ error: error });
     }
@@ -27,12 +27,12 @@ module.exports.getEmployee = async (req, res) => {
         const { id } = req.params;
         const employee = await Employee.findById(id);
         if (!employee) {
-            return res.status(404).json({ error: 'Employee not found' });
+            return res.status(404).json({ error: 'Employee not found', success: false });
         }
-        res.json({ employee });
+        res.json({ employee, success: true });
     } catch (e) {
         console.error(e);
-        res.status(500).json({ error: 'Internal Server Error' });
+        res.status(500).json({ error: 'Internal Server Error', success: false });
     }
 }
 module.exports.addEmployee = async (req, res) => {
@@ -40,7 +40,7 @@ module.exports.addEmployee = async (req, res) => {
 
     // Validate that at least the "name" attribute is present
     if (!name) {
-        return res.status(400).json({ error: 'Name is required in the request body.' });
+        return res.status(400).json({ error: 'Name is required in the request body.', success: false });
     }
     // Create a new employee object with the provided attributes
     const employee = new Employee({
@@ -77,10 +77,10 @@ module.exports.addEmployee = async (req, res) => {
         await employee.save();
 
         // Respond with success message and the created employee
-        res.json({ msg: 'Employee added', employee });
+        res.json({ msg: 'Employee added', employee, success: true });
     } catch (e) {
         console.error(e);
-        res.status(500).json({ error: 'Internal Server Error' });
+        res.status(500).json({ error: 'Internal Server Error', success: false });
     } ``
 };
 
@@ -90,12 +90,12 @@ module.exports.deleteEmployee = async (req, res) => {
         const { id } = req.params;
         const employee = await Employee.findByIdAndDelete(id);
         if (!employee) {
-            return res.status(404).json({ error: 'Employee not found' });
+            return res.status(404).json({ error: 'Employee not found', success: false });
         }
-        res.json({ msg: 'Employee deleted' });
+        res.json({ msg: 'Employee deleted', success: true });
     } catch (e) {
         console.error(e);
-        res.status(500).json({ error: 'Internal Server Error' });
+        res.status(500).json({ error: 'Internal Server Error', success: false });
     }
 }
 
@@ -108,7 +108,7 @@ module.exports.updateEmployee = async (req, res) => {
 
         // Check if the employee exists
         if (!employee) {
-            return res.status(404).json({ error: 'Employee not found' });
+            return res.status(404).json({ error: 'Employee not found', success: false });
         }
         //Check if user upload any image
         if (req.file) {
@@ -138,6 +138,16 @@ module.exports.updateEmployee = async (req, res) => {
         for (const [key, value] of Object.entries(updateFields)) {
             // Check if the key exists in the employee model schema before updating
             if (employee.schema.obj[key] !== undefined) {
+                //Perform type check
+                if (typeof value !== typeof employee[key]) {
+                    //Try to parse value to the same type as employee[key]
+                    try {
+                        employee[key] = JSON.parse(value);
+                    } catch (e) {
+                        //If fail, return error
+                        return res.status(400).json({ error: `Invalid type for ${key}. Expected ${typeof employee[key]}.', success: false` });
+                    }
+                }
                 employee[key] = value;
             }
         }
@@ -146,10 +156,10 @@ module.exports.updateEmployee = async (req, res) => {
         await employee.save();
 
         // Respond with success message and the updated employee
-        res.json({ msg: 'Employee updated', employee });
+        res.json({ msg: 'Employee updated', employee, success: true });
     } catch (e) {
         console.error(e);
-        res.status(500).json({ error: 'Internal Server Error' });
+        res.status(500).json({ error: 'Internal Server Error', success: false });
     }
 };
 
