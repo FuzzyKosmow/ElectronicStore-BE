@@ -8,6 +8,7 @@ const { storage } = require('../cloudinary');
 const upload = multer({ storage, limits: { fileSize: 10000000, }, dest: 'product/' }).array('images', 5, errorMaxImages);
 const Product = require('../models/product');
 const ValidatePagination = require('../middleware/validatePageLimit');
+const { ValidateCreateProduct, ValidateUpdateProduct } = require('../middleware/typeValidation/product');
 async function UploadImages(req, res, next) {
     try {
         await upload(req, res, function (err) {
@@ -42,11 +43,11 @@ const ValidatePageWrapper = async (req, res, next) => {
 
 router.route('/')
     .get(authorize(['employee', 'admin']), ValidatePageWrapper, productController.getProducts)
-    .post(authorize(['employee', 'admin']), UploadImages, productController.addProduct);
+    .post(authorize(['employee', 'admin']), UploadImages, ValidateCreateProduct, productController.addProduct);
 
 router.route('/:id')
     .get(authorize(['employee', 'admin']), productController.getProduct)
-    .patch(authorize(['employee', 'admin']), UploadImages, productController.updateProduct)
+    .patch(authorize(['employee', 'admin']), UploadImages, ValidateUpdateProduct, productController.updateProduct)
     .delete(authorize(['employee', 'admin']), productController.deleteProduct);
 
 
