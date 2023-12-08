@@ -130,17 +130,18 @@ module.exports.updateProduct = async (req, res) => {
         if (!product) {
             return res.status(404).json({ error: 'Product not found', success: false });
         }
-        //Update the product text fields
+        //Update the product
         for (const [key, value] of Object.entries(updateFields)) {
-            //Check if the key exists in the product schema
-            if (product[key] != undefined) {
-                product[key] = value;
-            }
+            product[key] = value;
         }
         if (imagesDel) {
             const imageIds = [...imagesDel]
             for (const imageId of imageIds) {
                 // Images is an array of ImageSchema. Find the image where id = imageId
+                if (!product.images) {
+                    console.log("Product does not have images");
+                    break;
+                }
                 const imageIndex = product.images.findIndex(image => image._id == imageId);
 
                 if (imageIndex !== -1) {
@@ -178,6 +179,9 @@ module.exports.updateProduct = async (req, res) => {
                     }
                 );
                 // Add the image to the product's images field
+                if (!product.images) {
+                    product.images = [];
+                }
                 product.images.push(image);
             }
         }
