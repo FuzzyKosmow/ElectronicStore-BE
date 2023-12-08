@@ -38,6 +38,8 @@ const ValidatePageWrapper = async (req, res, next) => {
 }
 router.route('/')
     .get(authorize(['employee', 'admin']), ValidatePageWrapper, employeeController.getEmployees)
+    //This path may be disable. Employee come with account. And ususally creating account also create another employee
+    //Consider disabling this path later.
     .post(authorize(['admin']), UploadImage, employeeController.addEmployee);
 router.route('/:id')
     .get(authorize(['employee', 'admin']), employeeController.getEmployee)
