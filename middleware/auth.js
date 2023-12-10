@@ -5,7 +5,7 @@ function authorize(rolesAllowed) {
     return (req, res, next) => {
         // Check if the user contains the required role
         if (!req.isAuthenticated()) {
-            return res.json({ msg: 'Unauthorized, you are not logged in' });
+            return res.status(401).json({ msg: 'Unauthorized, you are not logged in', success: false });
         }
         //Get username and check role 
         const { username } = req.user;
@@ -13,14 +13,14 @@ function authorize(rolesAllowed) {
         User.findOne({ username })
             .then(user => {
                 if (!user) {
-                    return res.json({ msg: 'Unauthorized, you are not logged in' });
+                    return res.status(401).json({ msg: 'Unauthorized, you are not logged in', success: false });
                 }
                 const { role } = user;
                 if (rolesAllowed.includes(role)) {
                     next();
                 }
                 else {
-                    return res.json({ msg: 'Unauthorized,  you must have one of the following roles: ' + rolesAllowed });
+                    return res.status(401).json({ msg: 'Unauthorized,  you must have one of the following roles: ' + rolesAllowed, success: false });
                 }
             })
             .catch(e => {
@@ -34,8 +34,8 @@ module.exports.getCurrentUser = (req, res, next) => {
     console.log(req.body);
     if (req.isAuthenticated()) {
         const { username, role } = req.user;
-        return res.json({ user: { username, role } });
+        return res.status(200).json({ user: { username, role } });
     }
-    res.json({ user: null });
+    res.status(200).json({ user: null });
 }
 module.exports.authorize = authorize;
