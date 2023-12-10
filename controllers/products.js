@@ -68,11 +68,12 @@ module.exports.getProducts = async (req, res) => {
     }
     try {
         results.results = await Product.find(filter).limit(limit).skip(startIndex).exec();
-        res.json({ ...results, success: true });
+        res.status(200).json({ ...results, success: true });
     } catch (error) {
         res.status(500).json({ error: error, success: false });
     }
 }
+
 //Accept in multi-part form data. Append images multiple times to add multiple images
 module.exports.addProduct = async (req, res) => {
     const product = new Product(req.body);
@@ -99,7 +100,7 @@ module.exports.addProduct = async (req, res) => {
     }
     try {
         const savedProduct = await product.save();
-        res.json({ msg: 'Product added', product: savedProduct, success: true });
+        res.status(200).json({ msg: 'Product added', product: savedProduct, success: true });
     } catch (error) {
         res.status(500).json({ error: error, success: false });
     }
