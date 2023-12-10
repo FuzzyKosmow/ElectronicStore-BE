@@ -70,7 +70,7 @@ module.exports.addOrder = async (req, res) => {
     }
 }
 
-module.exports.getOrder = async (req, res) => {
+module.exports.getOrder = async (req, res, next) => {
     try {
         const { id } = req.params;
         const order = await Order.findById(id);
@@ -79,6 +79,11 @@ module.exports.getOrder = async (req, res) => {
         res.status(200).json({ order, success: true });
     }
     catch (error) {
+        error.statusCode = 400;
+        //Fail to cast id
+        if (error.kind === 'ObjectId') {
+            error.message = 'Invalid order id';
+        }
         next(error);
     }
 }
