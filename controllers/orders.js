@@ -2,6 +2,7 @@ const Order = require('../models/order/order');
 const OrderDetail = require('../models/order/orderDetail');
 const Product = require('../models/product');
 const mongoose = require('mongoose');
+const ExpressError = require('../utils/ExpressError');
 function ConvertOrderQuery(query) {
     if (!query) {
         return {};
@@ -22,16 +23,17 @@ function ConvertOrderQuery(query) {
     return filter;
 }
 
-module.exports.getOrders = async (req, res) => {
+module.exports.getOrders = async (req, res,next) => {
     const limit = req.query.limit;
     const startIndex = req.query.startIndex;
     const filter = ConvertOrderQuery(req.query);
+    const results = req.results;
     try {
 
         results.results = await Order.find(filter).limit(limit).skip(startIndex).exec();
         res.status(200).json({ ...results, success: true });
     } catch (error) {
-        res.status(500).json({ error: error });
+       next(error);
     }
 }
 module.exports.addOrder = async (req, res) => {
@@ -43,7 +45,7 @@ module.exports.addOrder = async (req, res) => {
         status: 'Pending',
         orderDetails: [],
         total: 0
-    });
+    });``
     try {
         //Save order details
         for (const orderDetail of orderDetails) {
@@ -64,7 +66,7 @@ module.exports.addOrder = async (req, res) => {
         console.log("saved order");
         res.status(200).json({ msg: 'Order added', order: order });
     } catch (error) {
-        res.status(500).json({ error: error });
+        next(error);
     }
 }
 
@@ -76,8 +78,8 @@ module.exports.getOrder = async (req, res) => {
             return res.status(404).json({ error: 'Order not found', success: false });
         res.status(200).json({ order, success: true });
     }
-    catch (e) {
-        res.status(500).json({ error: e, success: false });
+    catch (error) {
+        next(error);
     }
 }
 //Generally used to udpate status of order. Can also be used to update customer id, employee id , order date and order details.
@@ -101,7 +103,10 @@ module.exports.updateOrder = async (req, res) => {
                     const date = req.body[key];
                     const [day, month, year] = date.split('/');
                     req.body[key] = new Date(year, month - 1, day);
-
+                    //Remove time zone offset
+                    req.body[key] = new Date(req.body[key].getTime() - req.body[key].getTimezoneOffset() * 60 * 1000);
+    
+                    
                 }
             }
             order[key] = req.body[key];
@@ -142,9 +147,8 @@ module.exports.updateOrder = async (req, res) => {
         }
         await order.save();
         res.status(200).json({ msg: 'Order updated', order: order });
-    } catch (e) {
-        console.log(e);
-        res.status(500).json({ error: e });
+    } catch (error) {
+        next(error);
     }
 }
 
