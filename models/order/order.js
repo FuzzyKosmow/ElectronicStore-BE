@@ -14,9 +14,9 @@ const Order = new Schema({
         required: true
     },
     orderDate: {
+        //DD/MM/YYYY
         type: Date,
         default: Date.now,
-        required: true
     },
     status: {
         type: String,
@@ -39,7 +39,6 @@ Order.pre('save', async function (next) {
     try {
         let total = 0;
         const orderDetails = [...this.orderDetails]
-        console.log(orderDetails);
         for (const orderDetailId of orderDetails) {
             const orderDetail = await mongoose.model('OrderDetail').findById(orderDetailId);
             const product = await mongoose.model('Product').findById(orderDetail.productId);
@@ -49,7 +48,6 @@ Order.pre('save', async function (next) {
         this.total = total;
         next();
     } catch (error) {
-
         console.log("Pre save error: ", error);
     }
 });

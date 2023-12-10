@@ -1,8 +1,7 @@
 const Order = require('../models/order/order');
 const OrderDetail = require('../models/order/orderDetail');
 const Product = require('../models/product');
-const pageLimit = 30;
-const page = 1;
+const mongoose = require('mongoose');
 function ConvertOrderQuery(query) {
     if (!query) {
         return {};
@@ -73,14 +72,15 @@ module.exports.getOrder = async (req, res) => {
     try {
         const { id } = req.params;
         const order = await Order.findById(id);
-        if (!order) {
-            return res.status(404).json({ error: 'Order not found' });
-        }
-        res.json({ order });
-    } catch (e) {
-        res.status(500).json({ error: e });
+        if (!order)
+            return res.status(404).json({ error: 'Order not found', success: false });
+        res.status(200).json({ order, success: true });
+    }
+    catch (e) {
+        res.status(500).json({ error: e, success: false });
     }
 }
+//Generally used to udpate status of order. Can also be used to update customer id, employee id , order date and order details.
 module.exports.updateOrder = async (req, res) => {
 
     try {
@@ -89,31 +89,61 @@ module.exports.updateOrder = async (req, res) => {
         if (!order) {
             return res.status(404).json({ error: 'Order not found' });
         }
-        const orderDetails = req.body.orderDetails;
-        //Delete old order details
-        await OrderDetail.deleteMany({ orderId: order._id });
-        //Save new order details
-        for (const orderDetail of orderDetails) {
-            const product = await Product.findById(orderDetail.productId);
-            if (!product) {
-                return res.status(400).json({ error: 'Product not found.' });
+
+        for (const key in req.body) {
+            //If order details are updated, ignore it
+            if (key === 'orderDetails' || key === 'deleteOrderDetails') {
+                continue;
             }
-            const newOrderDetail = new OrderDetail({
-                productId: orderDetail.productId,
-                quantity: orderDetail.quantity,
-                sellPrice: product.sellPrice,
-                orderId: order._id
-            });
-            await newOrderDetail.save();
-            order.orderDetails.push(newOrderDetail._id);
+            //Handle date conversion (DD/MM/YYYY)
+            if (key === 'orderDate') {
+                {
+                    const date = req.body[key];
+                    const [day, month, year] = date.split('/');
+                    req.body[key] = new Date(year, month - 1, day);
+
+                }
+            }
+            order[key] = req.body[key];
         }
-        order.customerId = req.body.customerId;
-        order.employeeId = req.body.employeeId;
-        order.orderDate = req.body.orderDate;
-        order.status = req.body.status;
+        //Handle order details to delete
+        if (req.body.deleteOrderDetails) {
+            const ordersToDelete = [...req.body.deleteOrderDetails];
+            //Delete order details
+            for (const orderDetailId of ordersToDelete) {
+                await mongoose.model('OrderDetail').findByIdAndDelete(orderDetailId);
+                const index = order.orderDetails.indexOf(orderDetailId);
+                if (index > -1) {
+                    order.orderDetails.splice(index, 1);
+                }
+            }
+        }
+
+        //Handle order details to add
+        if (req.body.newOrderDetails) {
+            const newOrderDetails = [...req.body.newOrderDetails];
+            for (const orderDetail of newOrderDetails) {
+                //Check if product exists - > if not, ignore it. If it does, add it to order details
+                const product = mongoose.model('Product').findById(orderDetail.productId);
+                if (!product) {
+                    continue;
+                }
+                const newOrderDetail = new OrderDetail({
+                    productId: orderDetail.productId,
+                    quantity: orderDetail.quantity,
+                    sellPrice: product.sellPrice,
+                    orderId: order._id
+                });
+                await newOrderDetail.save();
+                order.orderDetails.push(newOrderDetail._id);
+
+
+            }
+        }
         await order.save();
         res.status(200).json({ msg: 'Order updated', order: order });
     } catch (e) {
+        console.log(e);
         res.status(500).json({ error: e });
     }
 }
