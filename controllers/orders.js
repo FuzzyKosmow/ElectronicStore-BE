@@ -3,19 +3,55 @@ const OrderDetail = require('../models/order/orderDetail');
 const Product = require('../models/product');
 const mongoose = require('mongoose');
 const ExpressError = require('../utils/ExpressError');
-function ConvertOrderQuery(query) {
-    if (!query) {
-        return {};
-    }
+const Customer = require('../models/customer');
+const Employee = require('../models/employee');
+//Can query CustomerName, EmployeeName, orderDate (inside that day) , orderBeforeDate, orderAfterDate and status. Priority: orderDate > orderBeforeDate > orderAfterDate
+//For name, use regex to check if it contains the name (lowercase both sides)
+//For date, only one of them can be used at a time (orderDate or orderBeforeDate or orderAfterDate)
+//Accepted date format: DD/MM/YYYY
+//For status, use exact match
+function isValidDate(dateString) {
+    const regex = /^\d{2}\/\d{2}\/\d{4}$/;
+    return regex.test(dateString);
+}
+async function  ConvertOrderQuery(query)  {
     const filter = {};
-    if (query.customerId) {
-        filter.customerId = query.customerId;
+    if (query.customerName) {
+        //Find customer whose name contains the query
+        filter.customerId = { $in: await Customer.find({ name: { $regex: query.customerName, $options: 'i' } }).select('_id') };
     }
-    if (query.employeeId) {
-        filter.employeeId = query.employeeId;
+    if (query.employeeName) {
+        //Find employee whose name contains the query
+        filter.employeeId = { $in: await Employee.find({ name: { $regex: query.employeeName, $options: 'i' } }).select('_id') };
+    }
+    //Data send will be in DD/MM/YYYY 
+    //Date type check to ensure it's in DD/MM/YYYY format
+    if (query.orderAfterDate || query.orderBeforeDate || query.orderDate) {
+        if (!isValidDate(query.orderAfterDate) && query.orderAfterDate) {
+            throw new ExpressError('Invalid orderAfterDate format. Accepted format: DD/MM/YYYY', 400);      
+          }
+        if (!isValidDate(query.orderBeforeDate) && query.orderBeforeDate) {
+            throw new ExpressError('Invalid orderBeforeDate format. Accepted format: DD/MM/YYYY', 400);
+        }
+        if (!isValidDate(query.orderDate) && query.orderDate) {
+            throw new ExpressError('Invalid orderDate format. Accepted format: DD/MM/YYYY', 400);
+        }
+
+    }
+    if (query.orderAfterDate) {
+        const date = query.orderAfterDate;
+        const [day, month, year] = date.split('/');
+        filter.orderDate = { $gte: new Date(year, month - 1, day) };
+    }
+    if (query.orderBeforeDate) {
+        const date = query.orderBeforeDate;
+        const [day, month, year] = date.split('/');
+        filter.orderDate = { $lt: new Date(year, month - 1, day) };
     }
     if (query.orderDate) {
-        filter.orderDate = query.orderDate;
+        const date = query.orderDate;
+        const [day, month, year] = date.split('/');
+        filter.orderDate = { $gte: new Date(year, month - 1, day), $lt: new Date(year, month - 1, day + 1) };
     }
     if (query.status) {
         filter.status = query.status;
@@ -26,10 +62,10 @@ function ConvertOrderQuery(query) {
 module.exports.getOrders = async (req, res,next) => {
     const limit = req.query.limit;
     const startIndex = req.query.startIndex;
-    const filter = ConvertOrderQuery(req.query);
-    const results = req.results;
+    let filter = {};
+    let results = {};
     try {
-
+        filter = await ConvertOrderQuery(req.query);
         results.results = await Order.find(filter).limit(limit).skip(startIndex).exec();
         res.status(200).json({ ...results, success: true });
     } catch (error) {
@@ -98,7 +134,7 @@ module.exports.updateOrder = async (req, res) => {
         }
 
         for (const key in req.body) {
-            //If order details are updated, ignore it
+            //If order details are updated, ignore it. Handle it separately
             if (key === 'orderDetails' || key === 'deleteOrderDetails') {
                 continue;
             }
@@ -110,8 +146,6 @@ module.exports.updateOrder = async (req, res) => {
                     req.body[key] = new Date(year, month - 1, day);
                     //Remove time zone offset
                     req.body[key] = new Date(req.body[key].getTime() - req.body[key].getTimezoneOffset() * 60 * 1000);
-    
-                    
                 }
             }
             order[key] = req.body[key];
@@ -146,8 +180,6 @@ module.exports.updateOrder = async (req, res) => {
                 });
                 await newOrderDetail.save();
                 order.orderDetails.push(newOrderDetail._id);
-
-
             }
         }
         await order.save();
