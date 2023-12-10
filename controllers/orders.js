@@ -162,7 +162,6 @@ module.exports.deleteOrder = async (req, res) => {
         await Order.findByIdAndDelete(id);
         res.json({ msg: 'Order deleted' });
     } catch (e) {
-        console.log(e);
-        res.status(500).json({ error: e });
+        next(error);
     }
 }
