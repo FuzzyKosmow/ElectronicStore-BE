@@ -37,6 +37,7 @@ function errorMaxImages(req, res, next) {
     }
     next();
 }
+//Wrapper function for ValidatePagination that will check for the pagination query. If not provided, will use default values
 const ValidatePageWrapper = async (req, res, next) => {
     ValidatePagination(req, res, next, () => Product.countDocuments());
 }
