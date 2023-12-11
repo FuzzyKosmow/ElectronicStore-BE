@@ -99,7 +99,7 @@ module.exports.deleteEmployee = async (req, res) => {
     }
 }
 
-module.exports.updateEmployee = async (req, res) => {
+module.exports.updateEmployee = async (req, res,next) => {
     try {
         const { id } = req.params;
         const updateFields = req.body;
@@ -138,28 +138,27 @@ module.exports.updateEmployee = async (req, res) => {
         for (const [key, value] of Object.entries(updateFields)) {
             // Check if the key exists in the employee model schema before updating
             if (employee.schema.obj[key] !== undefined) {
-                //Perform type check
-                if (typeof value !== typeof employee[key]) {
-                    //Try to parse value to the same type as employee[key]
-                    try {
-                        employee[key] = JSON.parse(value);
-                    } catch (e) {
-                        //If fail, return error
-                        return res.status(400).json({ error: `Invalid type for ${key}. Expected ${typeof employee[key]}.', success: false` });
+                //Birth date is received in format DD/MM/YYYY.
+                if (key === 'birthDate') {
+                     const date = value;
+                    const [day, month, year] = date.split('/');
+                     //Remove hour and store in DD/MM/YYYY format
+                    employee[key] = new Date(`${year}-${month}-${day}`);
+                    
                     }
-                }
-                employee[key] = value;
+                else
+                    employee[key] = value;
             }
         }
 
-
+        
         await employee.save();
 
         // Respond with success message and the updated employee
         res.json({ msg: 'Employee updated', employee, success: true });
     } catch (e) {
         console.error(e);
-        res.status(500).json({ error: 'Internal Server Error', success: false });
+        next(e);
     }
 };
 

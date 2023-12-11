@@ -9,7 +9,8 @@ const { storage } = require('../cloudinary');
 //File name is employee username. Stored inside /employeee
 const upload = multer({ storage, limits: { fileSize: 10000000, }, dest: 'employee/' }).single('avatar');
 const ValidatePagination = require('../middleware/validatePageLimit');
-
+const { ValidateUpdateEmployee } = require('../middleware/typeValidation/user');
+const IsValidObjectId = require('../middleware/typeValidation/validObjectId');
 const UploadImage = async (req, res, next) => {
     try {
         await upload(req, res, function (err) {
@@ -42,9 +43,9 @@ router.route('/')
     //Consider disabling this path later.
     .post(authorize(['admin']), UploadImage, employeeController.addEmployee);
 router.route('/:id')
-    .get(authorize(['employee', 'admin']), employeeController.getEmployee)
-    .patch(authorize(['admin']), UploadImage, employeeController.updateEmployee)
-    .delete(authorize(['admin']), employeeController.deleteEmployee);
+    .get(authorize(['employee', 'admin']), IsValidObjectId, employeeController.getEmployee)
+    .patch(authorize(['admin']), IsValidObjectId,  UploadImage,ValidateUpdateEmployee, employeeController.updateEmployee)
+    .delete(authorize(['admin']), IsValidObjectId, employeeController.deleteEmployee);
 
 
 

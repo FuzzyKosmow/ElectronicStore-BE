@@ -1,4 +1,4 @@
-const joi = require('joi');
+const joi = require('joi').extend(require('@joi/date'));
 const GenderEnum = require('../../enums/gender');
 const CreateUserSchema = joi.object({
     username: joi.string().required().max(30),
@@ -38,6 +38,7 @@ const UpdateEmployeeSchema = joi.object({
 const ValidateCreateUser = (req, res, next) => {
     const { error } = CreateUserSchema.validate(req.body);
     if (error) {
+        console.log("Create user validation error: ", error);
         return res.status(400).json({ error: error.details[0].message, success: false });
     }
     next();
@@ -45,6 +46,7 @@ const ValidateCreateUser = (req, res, next) => {
 const ValidateUpdateUser = (req, res, next) => {
     const { error } = UpdateUserSchema.validate(req.body);
     if (error) {
+        console.log("Update validation error: ", error);
         return res.status(400).json({ error: error.details[0].message, success: false });
     }
     next();
@@ -52,14 +54,22 @@ const ValidateUpdateUser = (req, res, next) => {
 const ValidateCreateEmployee = (req, res, next) => {
     const { error } = CreateEmployeeSchema.validate(req.body);
     if (error) {
-        return res.status(400).json({ error: error.details[0].message, success: false });
+        console.log("Create employee validation error: ", error);
+        return res.status(400).json({ 
+            error: error.details[0].message, 
+            success: false 
+        });
     }
     next();
 }
 const ValidateUpdateEmployee = (req, res, next) => {
     const { error } = UpdateEmployeeSchema.validate(req.body);
     if (error) {
-        return res.status(400).json({ error: error.details[0].message, success: false });
+        console.log("Update validation error: ", error);
+        return res.status(400).json({ 
+            error: error.details[0].message, 
+            success: false 
+        });
     }
     next();
 }
