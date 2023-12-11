@@ -72,7 +72,7 @@ module.exports.getOrders = async (req, res,next) => {
        next(error);
     }
 }
-module.exports.addOrder = async (req, res) => {
+module.exports.addOrder = async (req, res, next) => {
     const orderDetails = req.body.orderDetails;
     const order = new Order({
         customerId: req.body.customerId,
