@@ -31,16 +31,22 @@ const productSchema = new Schema({
         type: String,
         required: true
     },
+    quantity: {
+        type: Number,
+        required: false,
+        default: 0
+
+    },
     images: {
         type: [ImageSchema],
     },
 });
 productSchema.post('findOneAndDelete', async function (doc) {
     try {
-        console.log("Deleting images from cloudinary: ", doc.images);
-        if (doc.images !== undefined) {
-            //Convert to array
-            const images = [...doc.images]
+        if (doc && doc.images) {
+            console.log("Deleting images from cloudinary: ", doc.images);
+            // Convert to array
+            const images = [...doc.images];
             for (const image of images) {
                 await cloudinary.uploader.destroy(image.fileName, function (err, res) {
                     if (err) {
@@ -49,7 +55,6 @@ productSchema.post('findOneAndDelete', async function (doc) {
                         console.log("Image deleted from cloudinary: ", res);
                     }
                 });
-
             }
         }
     } catch (e) {
