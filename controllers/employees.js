@@ -2,7 +2,7 @@ const Employee = require('../models/employee');
 const passport = require('passport');
 const Image = require('../models/image');
 const { cloudinary } = require('../cloudinary');
-module.exports.getEmployees = async (req, res) => {
+module.exports.getEmployees = async (req, res, next) => {
     //Implement pagination
     const limit = parseInt(req.query.limit);
     const startIndex = req.query.startIndex;
@@ -17,25 +17,24 @@ module.exports.getEmployees = async (req, res) => {
     try {
 
         results.results = await Employee.find(filter).limit(limit).skip(startIndex).exec();
-        res.status(200).json({ results, success: true });
+        res.status(200).json({ results });
     } catch (error) {
         res.status(500).json({ error: error });
     }
 }
-module.exports.getEmployee = async (req, res) => {
+module.exports.getEmployee = async (req, res, next) => {
     try {
         const { id } = req.params;
         const employee = await Employee.findById(id);
         if (!employee) {
             return res.status(404).json({ error: 'Employee not found', success: false });
         }
-        res.json({ employee, success: true });
+        res.json({ employee });
     } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: 'Internal Server Error', success: false });
+        next(e);
     }
 }
-module.exports.addEmployee = async (req, res) => {
+module.exports.addEmployee = async (req, res, next) => {
     const { name, phoneNumber, address, gender, birthDate, salary } = req.body;
 
     // Validate that at least the "name" attribute is present
@@ -79,27 +78,25 @@ module.exports.addEmployee = async (req, res) => {
         // Respond with success message and the created employee
         res.json({ msg: 'Employee added', employee, success: true });
     } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: 'Internal Server Error', success: false });
-    } ``
+        next(e);
+    }
 };
 
 
-module.exports.deleteEmployee = async (req, res) => {
+module.exports.deleteEmployee = async (req, res, next) => {
     try {
         const { id } = req.params;
         const employee = await Employee.findByIdAndDelete(id);
         if (!employee) {
-            return res.status(404).json({ error: 'Employee not found', success: false });
+            return res.status(404).json({ error: 'Employee not found' });
         }
-        res.json({ msg: 'Employee deleted', success: true });
+        res.status(200).json({ msg: 'Employee deleted' });
     } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: 'Internal Server Error', success: false });
+        next(e);
     }
 }
 
-module.exports.updateEmployee = async (req, res,next) => {
+module.exports.updateEmployee = async (req, res, next) => {
     try {
         const { id } = req.params;
         const updateFields = req.body;
@@ -140,25 +137,46 @@ module.exports.updateEmployee = async (req, res,next) => {
             if (employee.schema.obj[key] !== undefined) {
                 //Birth date is received in format DD/MM/YYYY.
                 if (key === 'birthDate') {
-                     const date = value;
+                    const date = value;
                     const [day, month, year] = date.split('/');
-                     //Remove hour and store in DD/MM/YYYY format
+                    //Remove hour and store in DD/MM/YYYY format
                     employee[key] = new Date(`${year}-${month}-${day}`);
-                    
-                    }
+
+                }
                 else
                     employee[key] = value;
             }
         }
 
-        
+
         await employee.save();
 
         // Respond with success message and the updated employee
-        res.json({ msg: 'Employee updated', employee, success: true });
+        res.status(200).json({ msg: 'Employee updated', employee });
     } catch (e) {
         console.error(e);
         next(e);
     }
+
 };
 
+module.exports.getCart = async (req, res, next) => {
+    try {
+        if (!req.session.cart) {
+            req.session.cart = [];
+        }
+        return res.status(200).json({ cart: req.session.cart });
+    } catch (e) {
+        next(e);
+    }
+}
+//Take in cart. Simply replace the old cart with new cart
+module.exports.modifyCart = async (req, res, next) => {
+    try {
+        const { cart } = req.body;
+        req.session.cart = cart;
+        return res.status(200).json({ msg: 'Cart updated' });
+    } catch (e) {
+        next(e);
+    }
+}
