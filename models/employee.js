@@ -36,6 +36,7 @@ const EmployeeSchema = new Schema({
 });
 //Post middleware to delete image from cloudinary when employee is deleted.
 EmployeeSchema.post('findOneAndDelete', async function (doc) {
+    //Delete image from cloudinary
     if (doc && doc.avatar && doc.avatar.fileName) {
         await cloudinary.uploader.destroy(doc.avatar.fileName, function (err, res) {
 
@@ -48,19 +49,21 @@ EmployeeSchema.post('findOneAndDelete', async function (doc) {
             }
         });
 
+
+    }
+    else {
+        console.log('No image found');
+    }
+    //Delete associated account
+    if (doc) {
         // Find account associated with employee using id
         const user = await User.findOne({ employeeId: doc._id });
-
-        // Delete account
         if (user) {
             await User.findByIdAndDelete(user._id);
             console.log('Employee has account. Account username: ', user.username + '. Account deleted');
         }
         else
             console.log('No user found');
-    }
-    else {
-        console.log('No image found');
     }
 });
 module.exports = mongoose.model('Employee', EmployeeSchema);

@@ -86,7 +86,7 @@ module.exports.addEmployee = async (req, res, next) => {
 module.exports.deleteEmployee = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const employee = await Employee.findByIdAndDelete(id);
+        const employee = await Employee.findOneAndDelete({ _id: id });
         if (!employee) {
             return res.status(404).json({ error: 'Employee not found' });
         }
