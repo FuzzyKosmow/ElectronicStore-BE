@@ -1,65 +1,41 @@
 const Customer = require('../models/customer');
-const pageLimit = 30;
 
-module.exports.getCustomers = async (req, res) => {
-    //Implement pagination
-    let page = parseInt(req.query.page);
-    let limit = parseInt(req.query.limit);
-    const query = req.query;
-
+//Search for customers by name, address, phone number
+//Will return if contains any of the search terms
+const ConvertCustomerQuery = (query) => {
     const filter = {};
     if (query.name) {
-        filter.name = query.name;
+        filter.name = { $regex: query.name, $options: 'i' };
     }
-
-    if (query.email) {
-        filter.email = query.email;
+    if (query.address) {
+        filter.address = { $regex: query.address, $options: 'i' };
     }
-    //Parameters for seraching products: name, category, 
-    if (page < 1) {
-        return res.status(400).json({ error: 'Invalid page number, should start with 1' });
+    if (query.phoneNumber) {
+        filter.phoneNumber = { $regex: query.phoneNumber, $options: 'i' };
     }
-    if (limit < 1) {
-        return res.status(400).json({ error: 'Invalid limit, should be positive number' });
-    }
-    if (isNaN(page))
-        page = 1;
-    if (isNaN(limit))
-        limit = pageLimit;
-
-    const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
-    const results = {};
-    const docCount = await Customer.countDocuments().exec();
-    //Safe guard for end index
-    if (endIndex < docCount) {
-        results.next = {
-            page: page + 1,
-            limit: limit
-        }
-    }
-    else if (endIndex >= docCount) {
-        results.next = null;
-    }
-    //Safe guard for start index
-    if (startIndex > 0) {
-        results.previous = {
-            page: page - 1,
-            limit: limit
-        }
-    }
-
-    try {
-
-        results.results = await Customer.find(filter).limit(limit).skip(startIndex).exec();
-        res.json(results);
-    } catch (error) {
-        res.status(500).json({ error: error });
-    }
+    return filter;
 }
 
-
-module.exports.addCustomer = async (req, res) => {
+module.exports.getCustomers = async (req, res, next) => {
+    const limit = req.query.limit;
+    const startIndex = req.query.startIndex;
+    const query = req.query;
+    const results = {};
+    results.next = req.results.next;
+    results.previous = req.results.previous;
+    //Filter assignment
+    let filter = {};
+    if (req.query) {
+        filter = ConvertCustomerQuery(req.query);
+    }
+    try {
+        results.results = await Customer.find(filter).limit(limit).skip(startIndex).exec();
+        res.status(200).json(results);
+    } catch (error) {
+        next(error);
+    }
+}
+module.exports.addCustomer = async (req, res, next) => {
     const { name, address, phoneNumber } = req.body;
     const customer = new Customer({
         name,
@@ -73,9 +49,9 @@ module.exports.addCustomer = async (req, res) => {
         customer.phoneNumber = null;
     try {
         await customer.save();
-        res.status(201).json(customer);
+        res.status(200).json(customer);
     } catch (error) {
-        res.status(400).json({ error: error });
+        next(error);
     }
 }
 
@@ -103,14 +79,15 @@ module.exports.updateCustomer = async (req, res) => {
         res.status(500).json({ error: error });
     }
 }
-module.exports.deleteCustomer = async (req, res) => {
+module.exports.deleteCustomer = async (req, res, next) => {
     try {
         const customer = await Customer.findByIdAndDelete(req.params.id).exec();
         if (!customer) {
-            return res.status(404).json({ error: 'Customer not found', success: false });
+            return res.status(404).json({ error: 'Customer not found' });
         }
-        res.json({ message: 'Customer deleted successfully', customer: customer, success: true });
+        res.status(200).json({ message: 'Customer deleted', _id: customer._id });
     } catch (error) {
-        res.status(500).json({ error: error });
+        next(error);
     }
 }
+
