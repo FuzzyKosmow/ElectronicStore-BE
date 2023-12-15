@@ -22,9 +22,9 @@ function ConvertProductQuery(query) {
     if (query.type) {
         filter.type = query.type;
     }
-    if (query.name) {
+    if (query.productName) {
         //Run regex to find all products that contain the name
-        filter.name = { $regex: query.name, $options: 'i' };
+        filter.productName = { $regex: query.productName, $options: 'i' };
     }
     if (query.manufacturer) {
         filter.manufacturer = { $regex: query.manufacturer, $options: 'i' };
