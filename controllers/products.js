@@ -236,23 +236,22 @@ module.exports.updateProduct = async (req, res, next) => {
         }
         //Save the product
         const savedProduct = await product.save();
-        res.json({ msg: 'Product updated', product: savedProduct, success: true });
-
+        res.status(200).json({ msg: 'Product updated', product: savedProduct });
     } catch (e) {
         next(e);
     }
 }
 //Delete product: Have post function to call delete images from cloudinary
-module.exports.deleteProduct = async (req, res) => {
+module.exports.deleteProduct = async (req, res, next) => {
     try {
         const { id } = req.params;
         const product = await Product.findByIdAndDelete(id);
         if (!product) {
+            console.log("Product not found");
             return res.status(404).json({ error: 'Product not found' });
         }
-        res.json({ msg: 'Product deleted', success: true });
+        res.status(200).json({ msg: 'Product deleted', success: true });
     } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: 'Internal Server Error', success: false });
+        next(e);
     }
 }
