@@ -227,6 +227,22 @@ module.exports.updateProduct = async (req, res, next) => {
                         url: path,
                     }
                 );
+                //Check if it's over 5 image limit
+                if (product.images.length >= 5) {
+                    console.log("Product id: ", product._id, " has reached maximum image limit. Image will not be added.");
+                    //Delete the image from cloudinary
+                    for (const image of req.files) {
+                        await cloudinary.uploader.destroy(image.filename, function (err, res) {
+                            if (err) {
+                                console.error("Error deleting image from cloudinary: ", err);
+                            } else {
+                                console.log("Image deleted from cloudinary: ", res);
+                            }
+                        });
+                    }
+                    break;
+                }
+
                 // Add the image to the product's images field
                 if (!product.images) {
                     product.images = [];
@@ -250,7 +266,7 @@ module.exports.deleteProduct = async (req, res, next) => {
             console.log("Product not found");
             return res.status(404).json({ error: 'Product not found' });
         }
-        res.status(200).json({ msg: 'Product deleted', success: true });
+        res.status(200).json({ msg: 'Product deleted', _id: id });
     } catch (e) {
         next(e);
     }
