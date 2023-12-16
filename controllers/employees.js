@@ -1,29 +1,69 @@
 const Employee = require('../models/employee');
-const passport = require('passport');
 const Image = require('../models/image');
 const { cloudinary } = require('../cloudinary');
+const Product = require('../models/product');
+//This function convert query to filter object for mongoose
+//Query can be:
+//Exact match: gender
+//Contains: name, address, email, phoneNumber
+//Birth date filter: birthDate, minBirthDate, maxBirthDate
+//Salary filter: salary, minSalary, maxSalary
+
+function ConvertEmployeeQuery(query) {
+    let filter = {};
+    if (!query)
+        return filter;
+    if (query.name) {
+        filter.name = { $regex: query.name, $options: 'i' };
+    }
+    if (query.address) {
+        filter.address = { $regex: query.address, $options: 'i' };
+    }
+    if (query.phoneNumber) {
+        filter.phoneNumber = { $regex: query.phoneNumber, $options: 'i' };
+    }
+    if (query.birthDate) {
+        filter.birthDate = query.birthDate;
+    }
+    if (query.minBirthDate) {
+        filter.birthDate = { $gte: query.minBirthDate };
+    }
+    if (query.maxBirthDate) {
+        filter.birthDate = { $lte: query.maxBirthDate };
+    }
+    if (query.salary) {
+        filter.salary = query.salary;
+    }
+    if (query.minSalary) {
+        filter.salary = { $gte: query.minSalary };
+    }
+    if (query.maxSalary) {
+        filter.salary = { $lte: query.maxSalary };
+    }
+    return filter;
+}
 module.exports.getEmployees = async (req, res, next) => {
     //Implement pagination
-    const limit = parseInt(req.query.limit);
+    const limit = req.query.limit;
     const startIndex = req.query.startIndex;
     const results = {};
-    const query = req.query;
-    const filter = {};
-    if (query.name) {
-        filter.name = query.name;
-    }
+    let filter = {};
     results.next = req.results.next;
     results.previous = req.results.previous;
+    if (req.query) {
+        filter = ConvertEmployeeQuery(req.query);
+    }
     try {
 
         results.results = await Employee.find(filter).limit(limit).skip(startIndex).exec();
         res.status(200).json({ results });
     } catch (error) {
-        res.status(500).json({ error: error });
+        next(error);
     }
 }
 module.exports.getEmployee = async (req, res, next) => {
     try {
+
         const { id } = req.params;
         const employee = await Employee.findById(id);
         if (!employee) {
@@ -162,6 +202,12 @@ module.exports.updateEmployee = async (req, res, next) => {
 
 module.exports.getCart = async (req, res, next) => {
     try {
+        //Check if employee exist
+        const { id } = req.params;
+        const employee = Employee.findById(id);
+        if (!employee) {
+            return res.status(404).json({ error: 'Employee not found' });
+        }
         if (!req.session.cart) {
             req.session.cart = [];
         }
@@ -174,6 +220,22 @@ module.exports.getCart = async (req, res, next) => {
 module.exports.modifyCart = async (req, res, next) => {
     try {
         const { cart } = req.body;
+        //Check if employee exist
+        const { id } = req.params;
+        const employee = Employee.findById(id);
+        if (!employee) {
+            return res.status(404).json({ error: 'Employee not found' });
+        }
+
+        //Check each item in cart. If item is not valid, response with error
+        for (let i = 0; i < cart.length; i++) {
+            const item = cart[i];
+            //Check if product exist
+            const product = Product.findById(item.productId);
+            if (!product) {
+                return res.status(404).json({ error: 'Product not found' });
+            }
+        }
         req.session.cart = cart;
         return res.status(200).json({ msg: 'Cart updated' });
     } catch (e) {
