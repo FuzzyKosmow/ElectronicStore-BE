@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-const Product = require('../product');
 const Order = new Schema({
     customerId: {
         type: Schema.Types.ObjectId,
@@ -14,7 +13,7 @@ const Order = new Schema({
         required: true
     },
     orderDate: {
-        //DD/MM/YYYY
+        //DD/MM/YYYY HH:MM:SS
         type: Date,
         default: Date.now,
     },
@@ -41,6 +40,12 @@ Order.pre('save', async function (next) {
         const orderDetails = [...this.orderDetails]
         for (const orderDetailId of orderDetails) {
             const orderDetail = await mongoose.model('OrderDetail').findById(orderDetailId);
+            //If undefined, remove it from order details
+            if (!orderDetail) {
+                console.log("Presave: Order detail not found");
+                this.orderDetails = this.orderDetails.filter(id => id !== orderDetailId);
+                continue;
+            }
             const product = await mongoose.model('Product').findById(orderDetail.productId);
             total += orderDetail.quantity * product.sellPrice;
 

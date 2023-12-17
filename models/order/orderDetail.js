@@ -7,7 +7,7 @@ const OrderDetailSchema = new Schema({
     },
     quantity: {
         type: Number,
-        min: 1,
+        min: 0,
         required: true
     }
 });

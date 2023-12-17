@@ -193,7 +193,7 @@ module.exports.updateOrder = async (req, res, next) => {
         //Go through each update value and update it
         for (const key in req.body) {
             //If order details are updated, ignore it. Handle it separately
-            if (key === 'newOrderDetails' || key === 'deleteOrderDetails') {
+            if (key === 'newOrderDetails' || key === 'deleteOrderDetails' || key === 'deleteProductFromOrderDetails') {
                 continue;
             }
             //Handle date conversion (DD/MM/YYYY)
@@ -210,10 +210,10 @@ module.exports.updateOrder = async (req, res, next) => {
             if (key === 'status') {
                 continue;
             }
-            //Handle customer id. If customer id is invalid and not null, throw error
+            //Handle customer id. If customer id is invalid and not null or not found, throw error
 
             if (key === 'customerId') {
-                const customer = Customer.findById(req.body[key]);
+                const customer = await Customer.findById(req.body[key]);
                 if (!customer && req.body[key] !== null) {
                     return res.status(400).json({ error: 'Invalid customer id' });
                 }
@@ -225,7 +225,7 @@ module.exports.updateOrder = async (req, res, next) => {
             }
             //Handle employee id. If employee id is invalid, throw error
             if (key === 'employeeId') {
-                const employee = Employee.findById(req.body[key]);
+                const employee = await Employee.findById(req.body[key]);
                 if (!employee) {
                     return res.status(400).json({ error: 'Invalid employee id' });
                 }
@@ -233,44 +233,113 @@ module.exports.updateOrder = async (req, res, next) => {
             }
             order[key] = req.body[key];
         }
-        //Handle order details to delete
+
+        //Handle deleteOrderDetails and deleteProductFromOrderDetails
         if (req.body.deleteOrderDetails) {
-            const ordersToDelete = [...req.body.deleteOrderDetails];
-            //Delete order details
-            for (const orderDetailId of ordersToDelete) {
-                await mongoose.model('OrderDetail').findByIdAndDelete(orderDetailId);
-                const index = order.orderDetails.indexOf(orderDetailId);
-                if (index > -1) {
-                    order.orderDetails.splice(index, 1);
+            const deleteOrderDetails = [...req.body.deleteOrderDetails];
+            for (const orderDetailId of deleteOrderDetails) {
+                const orderDetail = await OrderDetail.findById(orderDetailId);
+                if (!orderDetail) {
+                    return res.status(400).json({ error: 'Order detail not found' });
                 }
+                //Remove order detail from order
+                order.orderDetails = order.orderDetails.filter((orderDetailId) => {
+                    return orderDetailId.toString() !== orderDetail._id.toString();
+                });
+                //Remove order detail from database
+                await OrderDetail.findByIdAndDelete(orderDetailId);
             }
         }
+        //Use current order's order details. Find any details that has productId in deleteProductsFromOrder. If found, delete it. If not, return error
+        if (req.body.deleteProductsFromOrder) {
+            const productIdsToDelete = [...req.body.deleteProductsFromOrder];
+            const orderDetailIds = [...order.orderDetails];
+            const orderDetails = await OrderDetail.find({ _id: { $in: orderDetailIds } });
 
-        //Handle order details to add
+            // Use Promise.all for asynchronous operations
+            const deletedProductOrderDetails = await Promise.all(productIdsToDelete.map(async (productIdObject) => {
+                // Find order detail id that has productId
+                const orderDetailId = orderDetails.find(async (orderDetailId) => {
+                    const detail = await OrderDetail.findById(orderDetailId);
+                    return detail.productId === productIdObject.productId;
+                });
+
+                // If not found, return null
+                return orderDetailId || null;
+            }));
+
+            // Filter out null values (not found)
+            const validDeletedProductOrderDetails = deletedProductOrderDetails.filter(id => id !== null);
+
+            // Handle each found order detail
+            for (const orderDetailId of validDeletedProductOrderDetails) {
+                const orderDetail = await OrderDetail.findById(orderDetailId);
+
+                // Remove order detail from order
+                order.orderDetails = order.orderDetails.filter((detailId) => {
+                    return detailId !== orderDetailId;
+                });
+
+                // Remove order detail from database
+                await OrderDetail.findByIdAndDelete(orderDetailId);
+            }
+
+            await order.save();
+        }
+
+
+        // Handle order details to add
+        // Order detail cannot have the same product id.
+        // If duplicate, overwrite old quantity with new quantity
         if (req.body.newOrderDetails) {
-
             const newOrderDetails = [...req.body.newOrderDetails];
             for (const orderDetail of newOrderDetails) {
-                //Check if product exists - > if not, ignore it. If it does, add it to order details
+                // Check if product exists -> if not, ignore it. If it does, add it to order details
                 const product = await Product.findById(orderDetail.productId);
                 if (!product) {
+                    console.log("Product with id: ", orderDetail.productId, " not found. Ignored");
                     continue;
                 }
-                const newOrderDetail = new OrderDetail({
-                    productId: orderDetail.productId,
-                    quantity: orderDetail.quantity,
-                    sellPrice: product.sellPrice,
-                    orderId: order._id
-                });
-                //Check if quantity is valid
+                // Check if any order details in the current order have the same product id.
+                // If found, overwrite old quantity with new quantity
+                const duplicateProductOrderDetailId = await Promise.all(order.orderDetails.map(async (orderDetailId) => {
+                    const detail = await OrderDetail.findById(orderDetailId);
+                    const productId = detail.productId.toString();
+                    return productId === orderDetail.productId ? orderDetailId : null;
+                }));
+
+                // Filter out null values (not found) and use the first one (if any)
+                const firstDuplicateProductId = duplicateProductOrderDetailId.filter(id => id !== null)[0];
+
+                // Check if quantity is valid
                 if (orderDetail.quantity > product.quantity) {
                     return res.status(400).json({ error: 'Invalid quantity. Not enough quantity for product ' + product.productName });
                 }
 
-                await newOrderDetail.save();
-                order.orderDetails.push(newOrderDetail._id);
+                // If duplicate, overwrite old quantity with new quantity
+                if (firstDuplicateProductId) {
+                    console.log("Duplicate found. Overwriting old quantity with new quantity");
+                    const duplicateOrderDetail = await OrderDetail.findById(firstDuplicateProductId);
+                    duplicateOrderDetail.quantity = orderDetail.quantity;
+                    await duplicateOrderDetail.save();
+
+                } else {
+                    // If not a duplicate, create a new order detail
+                    const product = await Product.findById(orderDetail.productId);
+                    console.log("No duplicate found. Creating new order detail for product: ", product.productName);
+                    const newOrderDetail = new OrderDetail({
+                        productId: orderDetail.productId,
+                        quantity: orderDetail.quantity,
+                        sellPrice: product.sellPrice,
+                        orderId: order._id
+                    });
+                    order.orderDetails.push(newOrderDetail._id); // Add the new order detail to the order
+                    await newOrderDetail.save(); // Save the new order detail
+                    await order.save(); // Save the changes to the order
+                }
             }
         }
+
         //Handle status update and product quantity update
         if (req.body.status) {
             if (order.status === req.body.status) {
@@ -297,6 +366,7 @@ module.exports.updateOrder = async (req, res, next) => {
                     }
 
                     product.quantity = Math.max(0, parseInt(product.quantity) - parseInt(orderDetail.quantity));
+                    console.log("Reduced quantity of product: ", product.productName, " from ", product.quantity + orderDetail.quantity, " to ", product.quantity);
                     await product.save();
 
                 }
