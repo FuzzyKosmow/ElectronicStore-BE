@@ -7,7 +7,7 @@ const CreateOrderSchema = joi.object({
     employeeId: joi.objectId().required(),
     orderDetails: joi.array().items(joi.object({
         productId: joi.objectId().required(),
-        quantity: joi.number().required(),
+        quantity: joi.number().min(0).required(),
     })).required(),
 });
 // Can receive customer id, employee id, order date and status. Order details will be ignored
@@ -21,7 +21,11 @@ const UpdateOrderSchema = joi.object({
         productId: joi.objectId().required(),
         quantity: joi.number().min(0).required(),
     })),
+
     deleteOrderDetails: joi.array().items(joi.object({
+        orderDetailId: joi.objectId(),
+    })),
+    deleteProductsFromOrder: joi.array().items(joi.object({
         productId: joi.objectId().required(),
     })),
 
