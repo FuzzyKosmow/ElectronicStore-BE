@@ -12,7 +12,7 @@ const usersRouter = require('./routes/users');
 const employeesRouter = require('./routes/employees');
 const productsRouter = require('./routes/products');
 const customersRouter = require('./routes/customers');
-
+const ordersRouter = require('./routes/orders');
 const mongoose = require('mongoose');
 const methodOverride = require('method-override');
 const morgan = require('morgan');
@@ -24,6 +24,8 @@ const User = require('./models/user');
 const ExpressError = require('./utils/ExpressError');
 const RedisStore = require("connect-redis").default
 const createClient = require('redis').createClient;
+
+
 const redisClient = createClient(
     {
         password: process.env.REDIS_PASSWORD,
@@ -35,10 +37,12 @@ const redisClient = createClient(
     }
 )
 
-redisClient.connect().then(() => {
-    console.log('Redis connected');
-}).catch((err) => {
-    console.log(`Redis error: ${err}`);
+redisClient.connect()
+redisClient.on("error", function (error) {
+    console.error("Redis error: ", error);
+});
+redisClient.on("connect", function () {
+    console.log("Redis connected");
 });
 
 // Redis store
@@ -58,6 +62,8 @@ const sessionConfig = {
         maxAge: (1000 * 60 * 60 * 24 * 7)
     }
 }
+
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors());
@@ -68,8 +74,10 @@ app.use(session(sessionConfig));
 passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser())
+
 app.use(passport.initialize());
 app.use(passport.session());
+
 //TODO: For testing only delete later
 //Set views
 app.set('view engine', 'ejs');
@@ -83,21 +91,23 @@ app.use(methodOverride('_method'));
 app.use(morgan('tiny'));
 
 
+
 //Routes
+app.use('/api/orders', ordersRouter);
 app.use('/api/products', productsRouter);
+
 app.use('/api/employees', employeesRouter);
 app.use('/api/customers', customersRouter);
 app.use('/api/', usersRouter);
 app.use('/test', require('./routes/testSite'));
-app.all('*', (req, res, next) => {
-    console.log("Request made to: ", req.originalUrl);
-    next(new ExpressError('Page not found', 404));
-});
+
+
 //Error handling
 app.use((err, req, res, next) => {
     const { statusCode = 500 } = err;
     console.log("Error message: ", err.message);
     if (!err.message) err.message = 'Oh no, something went wrong!';
+    console.log("Error summary: ", err);
     res.status(statusCode).json({ error: err.message, statusCode: statusCode, success: false });
 });
 
@@ -118,3 +128,4 @@ mongoose.connect(process.env.MONGO_DB_LOCAL)
 app.listen(port, "0.0.0.0", () => {
     console.log(`Server is running on port ${port}`);
 });
+module.exports = app;
