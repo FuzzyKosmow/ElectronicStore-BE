@@ -60,7 +60,7 @@ EmployeeSchema.post('findOneAndDelete', async function (doc) {
         const user = await User.findOne({ employeeId: doc._id });
         if (user) {
             await User.findByIdAndDelete(user._id);
-            console.log('Employee has account. Account username: ', user.username + '. Account deleted');
+            console.log('POST: Employee has account. Account username: ', user.username + '. Account deleted');
         }
         else
             console.log('No user found');
