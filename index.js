@@ -70,6 +70,9 @@ app.use(cors());
 app.use(setCurrentUser);
 app.use(session(sessionConfig));
 
+
+
+
 //Passport configuration
 passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
@@ -108,7 +111,7 @@ app.use((err, req, res, next) => {
     console.log("Error message: ", err.message);
     if (!err.message) err.message = 'Oh no, something went wrong!';
     console.log("Error summary: ", err);
-    res.status(statusCode).json({ error: err.message, statusCode: statusCode, success: false });
+    res.status(statusCode).json({ error: err.message, statusCode: statusCode });
 });
 
 
