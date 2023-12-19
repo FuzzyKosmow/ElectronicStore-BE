@@ -8,12 +8,13 @@ const UserSchema = new Schema({
         type: String,
         enum: ['employee', 'admin'],
         default: 'employee',
+
         required: true
     },
     employeeId: {
         type: Schema.Types.ObjectId,
         ref: 'Employee',
-        required: true
+
     }
 });
 

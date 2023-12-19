@@ -35,17 +35,12 @@ module.exports.registerAdmin = async (req, res, next) => {
     try {
         console.log('registerAdmin');
         const { username, password } = req.body;
-        //Create an empty employee. Connect it to the user
-        const employee = new Employee(
-            {
-                name: username,
-            }
-        );
+
         //Check if user exists
         const userExists = await User.exists({ username: username });
-        await employee.save();
+
         const user = new User({ username, role: 'admin' });
-        user.employeeId = employee._id;
+        user.employeeId = null;
         //Register
         const registeredUser = await User.register(user, password);
         //Log in the user
@@ -54,7 +49,7 @@ module.exports.registerAdmin = async (req, res, next) => {
                 return next(err);
             }
             //Send json information
-            res.status(200).json({ msg: 'Admin registered', employeeId: employee._id, username: username, role: 'admin' });
+            res.status(200).json({ msg: 'Admin registered', username: username, role: 'admin' });
 
         });
     }
