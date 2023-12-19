@@ -102,7 +102,7 @@ app.use('/api/products', productsRouter);
 app.use('/api/employees', employeesRouter);
 app.use('/api/customers', customersRouter);
 app.use('/api/', usersRouter);
-app.use('/test', require('./routes/testSite'));
+
 
 
 //Error handling
