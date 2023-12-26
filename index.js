@@ -25,7 +25,7 @@ const ExpressError = require('./utils/ExpressError');
 const RedisStore = require("connect-redis").default
 const createClient = require('redis').createClient;
 const allowedOrigins = ['http://localhost:3000', 'https://localhost:3000', 'https://localhost:3000/'];
-
+const cookieSettings = require('./utils/cookieSetting');
 const redisClient = createClient(
     {
         password: process.env.REDIS_PASSWORD,
@@ -56,17 +56,11 @@ const sessionConfig = {
     secret: "SECRETSAUCE",
     resave: false,
     saveUninitialized: true,
-    cookie: {
-        httpOnly: process.env.COOKIE_SETTING_HTTP_ONLY ? process.env.COOKIE_SETTING_HTTP_ONLY : true,
-        expires: Date.now() + (1000 * 60 * 60 * 24 * 7), // 1 week
-        maxAge: (1000 * 60 * 60 * 24 * 7),
-        sameSite: process.env.COOKIE_SETTING_SAME_SITE ? process.env.COOKIE_SETTING_SAME_SITE : false,
-        secure: process.env.COOKIE_SETTING_SECURE ? process.env.COOKIE_SETTING_SECURE : false,
-
-    },
+    cookie: cookieSettings,
 
 }
 
+console.log("Cookie settings: ", sessionConfig.cookie);
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
