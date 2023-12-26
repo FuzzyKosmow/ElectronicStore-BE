@@ -68,7 +68,7 @@ module.exports.login = (req, res) => {
                 return next(err);
             }
             if (!user) {
-                return res.json({ msg: 'Invalid username or password', success: false });
+                return res.status(400).json({ error: 'Invalid username or password' });
             }
             req.logIn(user, function (err) {
                 if (err) {
@@ -95,7 +95,7 @@ module.exports.logout = (req, res, next) => {
             req.session.destroy();
             //Set user
             res.user = null;
-            res.json({ msg: 'Logout success', success: true });
+            res.status(200).json({ msg: 'Logout success' });
         });
     }
     catch (e) {
