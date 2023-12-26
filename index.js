@@ -56,9 +56,17 @@ const sessionConfig = {
     secret: "SECRETSAUCE",
     resave: false,
     saveUninitialized: true,
-    cookie: cookieSettings,
+    cookie:
+    {
+        ...cookieSettings,
 
+    },
 }
+if (process.env.COOKIES_SETTING_SECURE === 'true') {
+    console.log("Secure cookie. Trust proxy");
+    app.set('trust proxy', 1);
+}
+
 
 console.log("Cookie settings: ", sessionConfig.cookie);
 
