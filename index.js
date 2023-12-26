@@ -57,11 +57,11 @@ const sessionConfig = {
     resave: false,
     saveUninitialized: true,
     cookie: {
-        httpOnly: true,
+        httpOnly: process.env.COOKIE_SETTING_HTTP_ONLY ? process.env.COOKIE_SETTING_HTTP_ONLY : true,
         expires: Date.now() + (1000 * 60 * 60 * 24 * 7), // 1 week
         maxAge: (1000 * 60 * 60 * 24 * 7),
-        sameSite: 'none',
-        secure: true,
+        sameSite: process.env.COOKIE_SETTING_SAME_SITE ? process.env.COOKIE_SETTING_SAME_SITE : false,
+        secure: process.env.COOKIE_SETTING_SECURE ? process.env.COOKIE_SETTING_SECURE : false,
 
     },
 
