@@ -24,7 +24,7 @@ const User = require('./models/user');
 const ExpressError = require('./utils/ExpressError');
 const RedisStore = require("connect-redis").default
 const createClient = require('redis').createClient;
-
+const allowedOrigins = ['http://localhost:3000', 'https://localhost:3000', 'https://localhost:3000/'];
 
 const redisClient = createClient(
     {
@@ -60,7 +60,8 @@ const sessionConfig = {
         httpOnly: true,
         expires: Date.now() + (1000 * 60 * 60 * 24 * 7), // 1 week
         maxAge: (1000 * 60 * 60 * 24 * 7),
-        sameSite: 'lax',
+        sameSite: 'none',
+        secure: true,
 
     },
 
@@ -70,7 +71,7 @@ const sessionConfig = {
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: allowedOrigins,
     credentials: true,
 }));
 app.use(setCurrentUser);
