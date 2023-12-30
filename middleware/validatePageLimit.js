@@ -45,6 +45,7 @@ const ValidatePagination = async (req, res, next, countDocuments) => {
     }
     else
         req.results.previous = null;
+    req.results.totalDocuments = totalDocuments;
     next();
 }
 module.exports = ValidatePagination;

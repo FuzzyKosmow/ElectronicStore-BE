@@ -64,6 +64,7 @@ module.exports.getOrders = async (req, res, next) => {
     const startIndex = req.query.startIndex;
     let filter = {};
     let results = {};
+    results = { ...req.results }
     try {
         filter = await ConvertOrderQuery(req.query);
         results.results = await Order.find(filter).limit(limit).skip(startIndex).exec();
@@ -93,6 +94,10 @@ module.exports.getOrderDetail = async (req, res, next) => {
 //if status is delivered, update product quantity
 module.exports.addOrder = async (req, res, next) => {
     const orderDetails = req.body.orderDetails;
+    let additionalMSG = '';
+    if (req.body.customerId === undefined) {
+        req.body.customerId = null;
+    }
     const order = new Order({
         customerId: req.body.customerId,
         employeeId: req.body.employeeId,
@@ -115,12 +120,12 @@ module.exports.addOrder = async (req, res, next) => {
     //Check if customer exists. Cusoemr id can be null
     const customer = await Customer.findById(order.customerId);
     if (!customer && order.customerId !== null) {
-        return res.status(400).json({ error: 'Customer not found' });
+        return res.status(400).json({ error: 'Customer with id ' + order.customerId + ' not found' });
     }
     //Check if employee exists. 
     const employee = await Employee.findById(order.employeeId);
     if (!employee) {
-        return res.status(400).json({ error: 'Employee not found' });
+        return res.status(400).json({ error: 'Employee with id ' + order.employeeId + ' not found' });
     }
 
 
@@ -129,7 +134,7 @@ module.exports.addOrder = async (req, res, next) => {
         for (const orderDetail of orderDetails) {
             const product = await Product.findById(orderDetail.productId);
             if (!product) {
-                return res.status(400).json({ error: 'Product not found.' });
+                return res.status(400).json({ error: 'Product with id ' + orderDetail.productId + ' not found' });
             }
             //Check if quantity is valid
             if (orderDetail.quantity > product.quantity) {
@@ -180,6 +185,7 @@ module.exports.updateOrder = async (req, res, next) => {
 
     try {
         const { id } = req.params;
+        let additionalMSG = '';
         if (!id || id === undefined) {
             return res.status(400).json({ error: 'Order id not provided' });
         }
@@ -237,7 +243,9 @@ module.exports.updateOrder = async (req, res, next) => {
         //Handle deleteOrderDetails and deleteProductFromOrderDetails
         if (req.body.deleteOrderDetails) {
             const deleteOrderDetails = [...req.body.deleteOrderDetails];
-            for (const orderDetailId of deleteOrderDetails) {
+            for (const orderDetailIdObject of deleteOrderDetails) {
+                const orderDetailId = orderDetailIdObject.orderDetailId;
+                console.log("Deleting order detail with id: ", orderDetailId);
                 const orderDetail = await OrderDetail.findById(orderDetailId);
                 if (!orderDetail) {
                     return res.status(400).json({ error: 'Order detail not found' });
@@ -298,6 +306,7 @@ module.exports.updateOrder = async (req, res, next) => {
                 const product = await Product.findById(orderDetail.productId);
                 if (!product) {
                     console.log("Product with id: ", orderDetail.productId, " not found. Ignored");
+                    additionalMSG += "Product with id: " + orderDetail.productId + " not found. Ignored\n";
                     continue;
                 }
                 // Check if any order details in the current order have the same product id.
@@ -319,6 +328,7 @@ module.exports.updateOrder = async (req, res, next) => {
                 // If duplicate, overwrite old quantity with new quantity
                 if (firstDuplicateProductId) {
                     console.log("Duplicate found. Overwriting old quantity with new quantity");
+                    additionalMSG += "Duplicate found for product with id: " + orderDetail.productId + ". Overwriting old quantity with new quantity\n";
                     const duplicateOrderDetail = await OrderDetail.findById(firstDuplicateProductId);
                     duplicateOrderDetail.quantity = orderDetail.quantity;
                     await duplicateOrderDetail.save();
@@ -327,6 +337,7 @@ module.exports.updateOrder = async (req, res, next) => {
                     // If not a duplicate, create a new order detail
                     const product = await Product.findById(orderDetail.productId);
                     console.log("No duplicate found. Creating new order detail for product: ", product.productName);
+                    additionalMSG += "No duplicate found. Creating new order detail for product: " + product.productName + "\n";
                     const newOrderDetail = new OrderDetail({
                         productId: orderDetail.productId,
                         quantity: orderDetail.quantity,
@@ -367,6 +378,7 @@ module.exports.updateOrder = async (req, res, next) => {
 
                     product.quantity = Math.max(0, parseInt(product.quantity) - parseInt(orderDetail.quantity));
                     console.log("Reduced quantity of product: ", product.productName, " from ", product.quantity + orderDetail.quantity, " to ", product.quantity);
+                    additionalMSG += "Reduced quantity of product: " + product.productName + " from " + (product.quantity + orderDetail.quantity) + " to " + product.quantity + "\n";
                     await product.save();
 
                 }
@@ -376,7 +388,7 @@ module.exports.updateOrder = async (req, res, next) => {
 
         }
         await order.save();
-        res.status(200).json({ msg: 'Order updated', order: order });
+        res.status(200).json({ msg: 'Order updated', order: order, additionalMSG: additionalMSG });
     } catch (error) {
         next(error);
     }

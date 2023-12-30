@@ -75,9 +75,8 @@ module.exports.getProducts = async (req, res) => {
     const limit = req.query.limit;
     const startIndex = req.query.startIndex;
     const query = req.query;
-    const results = {};
-    results.next = req.results.next;
-    results.previous = req.results.previous;
+    let results = {};
+    results = { ...req.results };
     //Filter assignment
     let filter = {};
     if (req.query) {

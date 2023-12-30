@@ -2,6 +2,7 @@ const Employee = require('../models/employee');
 const Image = require('../models/image');
 const { cloudinary } = require('../cloudinary');
 const Product = require('../models/product');
+const User = require('../models/user');
 //This function convert query to filter object for mongoose
 //Query can be:
 //Exact match: gender
@@ -40,22 +41,24 @@ function ConvertEmployeeQuery(query) {
     if (query.maxSalary) {
         filter.salary = { $lte: query.maxSalary };
     }
+
+
     return filter;
 }
 module.exports.getEmployees = async (req, res, next) => {
     //Implement pagination
     const limit = req.query.limit;
     const startIndex = req.query.startIndex;
-    const results = {};
+    let results = {};
     let filter = {};
-    results.next = req.results.next;
-    results.previous = req.results.previous;
+    results = { ...req.results }
     if (req.query) {
         filter = ConvertEmployeeQuery(req.query);
     }
     try {
 
         results.results = await Employee.find(filter).limit(limit).skip(startIndex).exec();
+
         res.status(200).json({ results });
     } catch (error) {
         next(error);
