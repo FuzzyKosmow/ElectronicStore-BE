@@ -33,8 +33,8 @@ module.exports.getCurrentUser = (req, res, next) => {
     //If logged in , return username and role.
     console.log(req.body);
     if (req.isAuthenticated()) {
-        const { username, role } = req.user;
-        return res.status(200).json({ user: { username, role } });
+        const { username, role, employeeId } = req.user;
+        return res.status(200).json({ user: { username, role, employeeId } });
     }
     res.status(200).json({ user: null });
 }
