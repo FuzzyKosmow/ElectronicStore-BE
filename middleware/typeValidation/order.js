@@ -3,7 +3,7 @@ joi.objectId = require('joi-objectid')(joi);
 
 //Receive customer id, employee id and order details only.  Order date will be set to current date and status will be set to 'pending'
 const CreateOrderSchema = joi.object({
-    customerId: joi.objectId(),
+    customerId: joi.objectId().required(),
     employeeId: joi.objectId().required(),
     orderDetails: joi.array().items(joi.object({
         productId: joi.objectId().required(),
