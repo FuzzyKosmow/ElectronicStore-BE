@@ -407,10 +407,11 @@ module.exports.updateOrder = async (req, res, next) => {
                     console.log("Increased sold of product: ", product.productName, " from ", product.sold - orderDetail.quantity, " to ", product.sold);
                     await product.save();
                     //Update customer's latest order date and total value bought
-                    await postOrderProcessor(order);
+
 
 
                 }
+                await postOrderProcessor(order);
                 order.status = req.body.status;
                 console.log("Status updated");
             }
