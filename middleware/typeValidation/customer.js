@@ -2,7 +2,7 @@ const joi = require('joi');
 const CreateCustomerSchema = joi.object({
     name: joi.string().required().max(25),
     address: joi.string().max(50),
-    phoneNumber: joi.string().max(15),
+    phoneNumber: joi.string().max(15).required(),
 });
 
 const UpdateCustomerSchema = joi.object({

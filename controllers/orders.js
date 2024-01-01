@@ -14,6 +14,26 @@ function isValidDate(dateString) {
     const regex = /^\d{2}\/\d{2}\/\d{4}$/;
     return regex.test(dateString);
 }
+//Post order processor. Update latest order on customer, totalValue bought of customer.
+//Also update statistic later.
+const postOrderProcessor = async (order) => {
+    const customer = await Customer.findById(order.customerId);
+    if (!customer) {
+        console.log("Customer not found");
+        return;
+    }
+    if (!customer.latestOrderDate || customer.latestOrderDate < order.orderDate) {
+        //To DD/MM/YYYY
+        customer.latestOrderDate = order.orderDate.toLocaleDateString('en-GB');
+    }
+    if (customer.totalValueBought === undefined) {
+        customer.totalValueBought = 0;
+    }
+    customer.totalValueBought += order.total;
+    console.log("Updated customer: ", customer);
+    await customer.save();
+}
+
 async function ConvertOrderQuery(query) {
     const filter = {};
     if (query.customerName) {
@@ -358,8 +378,9 @@ module.exports.updateOrder = async (req, res, next) => {
                 console.log("Duplicate status");
             }
 
-            //If status is delivered, update product quantity
+            //If status is delivered, update product quantity and its sold
             //Go through order details and update product quantity in current order
+            //Also add current order to customer's latest order and total value bought
             else if (req.body.status === 'Delivered') {
                 const orderDetails = [...order.orderDetails];
                 for (const orderDetailId of orderDetails) {
@@ -379,7 +400,15 @@ module.exports.updateOrder = async (req, res, next) => {
                     product.quantity = Math.max(0, parseInt(product.quantity) - parseInt(orderDetail.quantity));
                     console.log("Reduced quantity of product: ", product.productName, " from ", product.quantity + orderDetail.quantity, " to ", product.quantity);
                     additionalMSG += "Reduced quantity of product: " + product.productName + " from " + (product.quantity + orderDetail.quantity) + " to " + product.quantity + "\n";
+                    if (product.sold === undefined) {
+                        product.sold = 0;
+                    }
+                    product.sold += orderDetail.quantity;
+                    console.log("Increased sold of product: ", product.productName, " from ", product.sold - orderDetail.quantity, " to ", product.sold);
                     await product.save();
+                    //Update customer's latest order date and total value bought
+                    await postOrderProcessor(order);
+
 
                 }
                 order.status = req.body.status;
