@@ -3,6 +3,7 @@ const Image = require('../models/image');
 const { cloudinary } = require('../cloudinary');
 const Product = require('../models/product');
 const User = require('../models/user');
+const adminEmployeeInfoId = process.env.ADMIN_EMPLOYEE_INFO_ID;
 //This function convert query to filter object for mongoose
 //Query can be:
 //Exact match: gender
@@ -58,6 +59,10 @@ module.exports.getEmployees = async (req, res, next) => {
     try {
 
         results.results = await Employee.find(filter).limit(limit).skip(startIndex).exec();
+        //Exclude admin employee info
+        if (adminEmployeeInfoId) {
+            results.results = results.results.filter(employee => employee._id.toString() !== adminEmployeeInfoId);
+        }
 
         res.status(200).json({ results });
     } catch (error) {
