@@ -4,8 +4,8 @@ const Order = new Schema({
     customerId: {
         type: Schema.Types.ObjectId,
         ref: 'Customer',
-        nullable: true,
-        required: true,
+        required: true
+
     },
     employeeId: {
         type: Schema.Types.ObjectId,
