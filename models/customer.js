@@ -12,8 +12,19 @@ const CustomerSchema = new Schema(
         },
         phoneNumber: {
             type: String,
-            required: false
+            required: true,
         },
+        latestOrderDate: {
+            //DD/MM/YYYY
+            type: String,
+            required: false,
+            default: null
+        },
+        totalValueBought: {
+            type: Number,
+            required: false,
+            default: 0
+        }
     }
 )
 module.exports = mongoose.model('Customer', CustomerSchema);
