@@ -94,7 +94,14 @@ module.exports.getOrders = async (req, res, next) => {
     results = { ...req.results }
     try {
         filter = await ConvertOrderQuery(req.query);
-        results.results = await Order.find(filter).limit(limit).skip(startIndex).exec();
+        results.results = await Order
+            .find(filter)
+            .limit(limit)
+            .skip(startIndex)
+            .populate('customerId', 'name')
+            .exec();
+
+
         res.status(200).json({ ...results });
     } catch (error) {
         next(error);
