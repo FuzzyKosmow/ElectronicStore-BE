@@ -22,9 +22,16 @@ const postOrderProcessor = async (order) => {
         console.log("Customer not found");
         return;
     }
-    if (!customer.latestOrderDate || customer.latestOrderDate < order.orderDate) {
+    if (!customer.latestOrderDate) {
         //To DD/MM/YYYY
         customer.latestOrderDate = order.orderDate.toLocaleDateString('en-GB');
+    }
+    else {
+        //Compare date
+        const latestOrderDate = new Date(customer.latestOrderDate);
+        if (order.orderDate > latestOrderDate) {
+            customer.latestOrderDate = order.orderDate.toLocaleDateString('en-GB');
+        }
     }
     if (customer.totalValueBought === undefined) {
         customer.totalValueBought = 0;
