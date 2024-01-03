@@ -31,12 +31,17 @@ const Order = new Schema({
     total: {
         type: Number,
         default: 0
+    },
+    profit: {
+        type: Number,
+        default: 0
     }
 });
 Order.pre('save', async function (next) {
     //Use order details to get product and its sell price to calculate total
     try {
         let total = 0;
+        let baseCost = 0;
         const orderDetails = [...this.orderDetails]
         for (const orderDetailId of orderDetails) {
             const orderDetail = await mongoose.model('OrderDetail').findById(orderDetailId);
@@ -48,9 +53,15 @@ Order.pre('save', async function (next) {
             }
             const product = await mongoose.model('Product').findById(orderDetail.productId);
             total += orderDetail.quantity * product.sellPrice;
+            baseCost += orderDetail.quantity * product.importPrice;
+
 
         }
+
         this.total = total;
+        this.profit = total - baseCost;
+
+
         next();
     } catch (error) {
         console.log("Pre save error: ", error);
