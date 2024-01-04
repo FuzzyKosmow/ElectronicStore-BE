@@ -99,6 +99,17 @@ module.exports.getOrders = async (req, res, next) => {
             .limit(limit)
             .skip(startIndex)
             .populate('customerId', 'name')
+            .populate('employeeId', 'name')
+            //Populate orderDetails product in side each productId
+            .populate('orderDetails', 'productId quantity sellPrice')
+            //Populate product inside each orderDetails, sellPrice and images
+            .populate({
+                path: 'orderDetails',
+                populate: {
+                    path: 'productId',
+                    select: 'productName sellPrice images'
+                }
+            })
             .exec();
 
 
