@@ -98,7 +98,7 @@ module.exports.getOrders = async (req, res, next) => {
             .find(filter)
             .limit(limit)
             .skip(startIndex)
-            .populate('customerId', 'name')
+            .populate('customerId', 'name phoneNumber')
             .populate('employeeId', 'name')
             //Populate orderDetails product in side each productId
             .populate('orderDetails', 'productId quantity sellPrice')
