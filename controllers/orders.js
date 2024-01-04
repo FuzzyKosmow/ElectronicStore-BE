@@ -407,7 +407,10 @@ module.exports.updateOrder = async (req, res, next) => {
                 //Ignore duplicate status
                 console.log("Duplicate status");
             }
-
+            else if (req.body.status === 'Cancelled') {
+                order.status = req.body.status;
+                console.log("Status updated");
+            }
             //If status is delivered, update product quantity and its sold
             //Go through order details and update product quantity in current order
             //Also add current order to customer's latest order and total value bought
