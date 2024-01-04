@@ -16,7 +16,7 @@ const UpdateOrderSchema = joi.object({
     employeeId: joi.objectId(),
     //DD/MM/YYYY
     orderDate: joi.date().format('DD/MM/YYYY'),
-    status: joi.string().valid('Pending', 'In Progress', 'Delivered'),
+    status: joi.string().valid('Pending', 'Cancelled', 'Delivered'),
     newOrderDetails: joi.array().items(joi.object({
         productId: joi.objectId().required(),
         quantity: joi.number().min(0).required(),
