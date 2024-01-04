@@ -226,6 +226,7 @@ module.exports.getOrder = async (req, res, next) => {
 //Generally used to udpate status of order. Can also be used to update customer id, employee id , order date and order details.
 //If status is updated to delivered, update product quantity
 //If order is already delivered, cannot be updated
+//If status is cancelled, cannot be updated
 module.exports.updateOrder = async (req, res, next) => {
 
     try {
@@ -240,6 +241,9 @@ module.exports.updateOrder = async (req, res, next) => {
         }
         if (order.status === 'Delivered') {
             return res.status(400).json({ error: 'Order is already delivered. Cannot be updated' });
+        }
+        if (order.status === 'Cancelled') {
+            return res.status(400).json({ error: 'Order is cancelled. Cannot be updated. Try deleting it instead' });
         }
         //Go through each update value and update it
         for (const key in req.body) {
@@ -344,6 +348,7 @@ module.exports.updateOrder = async (req, res, next) => {
         // Handle order details to add
         // Order detail cannot have the same product id.
         // If duplicate, overwrite old quantity with new quantity
+
         if (req.body.newOrderDetails) {
             const newOrderDetails = [...req.body.newOrderDetails];
             for (const orderDetail of newOrderDetails) {
