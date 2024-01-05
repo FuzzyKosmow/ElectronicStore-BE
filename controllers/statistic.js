@@ -1,6 +1,7 @@
 const Product = require("../models/product");
 const Order = require("../models/order/order");
 const Customer = require("../models/customer");
+const mongoose = require('mongoose');
 
 //Date data will be in format DD/MM/YYYY
 //Convert to valid date
