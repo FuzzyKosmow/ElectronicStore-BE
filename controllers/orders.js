@@ -449,13 +449,17 @@ module.exports.updateOrder = async (req, res, next) => {
 
 
                 }
-                await postOrderProcessor(order);
+
                 order.status = req.body.status;
                 console.log("Status updated");
             }
 
         }
+
         await order.save();
+        if (order.status === 'Delivered') {
+            await postOrderProcessor(order);
+        }
         res.status(200).json({ msg: 'Order updated', order: order, additionalMSG: additionalMSG });
     } catch (error) {
         next(error);
