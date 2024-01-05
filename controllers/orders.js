@@ -423,7 +423,12 @@ module.exports.updateOrder = async (req, res, next) => {
                     //If product is not found, throw error
                     if (!product) {
                         console.log("Product with id: ", orderDetailId.productId, " not found");
-                        return res.status(400).json({ error: 'Product not found' });
+                        //If not found, ignore. The only case this can happen is when product is deleted
+                        //Also remove the order detail from order
+                        order.orderDetails = order.orderDetails.filter((orderDetailId) => {
+                            return orderDetailId !== orderDetail._id;
+                        });
+                        continue;
                     }
                     //If dont have enough quantity, throw error
                     if (product.quantity < orderDetailId.quantity) {
