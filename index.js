@@ -13,6 +13,7 @@ const employeesRouter = require('./routes/employees');
 const productsRouter = require('./routes/products');
 const customersRouter = require('./routes/customers');
 const ordersRouter = require('./routes/orders');
+const statisticRouter = require('./routes/statistic');
 const mongoose = require('mongoose');
 const methodOverride = require('method-override');
 const morgan = require('morgan');
@@ -59,7 +60,6 @@ const sessionConfig = {
     cookie:
     {
         ...cookieSettings,
-
     },
 }
 if (process.env.COOKIES_SETTING_SECURE === 'true') {
@@ -111,7 +111,7 @@ app.use('/api/products', productsRouter);
 app.use('/api/employees', employeesRouter);
 app.use('/api/customers', customersRouter);
 app.use('/api/', usersRouter);
-
+app.use('/api/statistic', statisticRouter);
 
 
 //Error handling
