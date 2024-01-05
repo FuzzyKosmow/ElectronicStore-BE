@@ -206,16 +206,14 @@ module.exports.getProductSold = async (req, res, next) => {
             const orderDetails = order.orderDetails;
             for (const orderDetailId of orderDetails) {
                 const orderDetail = await mongoose.model('OrderDetail').findById(orderDetailId);
-                //If undefined, remove it from order details
+                //If undefined, ignore
                 if (!orderDetail) {
-                    console.log("Presave: Order detail not found");
-                    this.orderDetails = this.orderDetails.filter(id => id !== orderDetailId);
+                    console.log("Order detail not found. Ignoring");
                     continue;
                 }
                 const product = await mongoose.model('Product').findById(orderDetail.productId);
                 if (!product) {
-                    console.log("Presave: Product not found");
-                    this.orderDetails = this.orderDetails.filter(id => id !== orderDetailId);
+                    console.log("Product not found. Ignoring");
                     continue;
                 }
                 const dailyProductSold = dailyProductSoldMap.get(orderDateString) || 0;
