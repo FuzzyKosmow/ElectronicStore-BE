@@ -52,6 +52,11 @@ Order.pre('save', async function (next) {
                 continue;
             }
             const product = await mongoose.model('Product').findById(orderDetail.productId);
+            if (!product) {
+                console.log("Presave: Product not found");
+                this.orderDetails = this.orderDetails.filter(id => id !== orderDetailId);
+                continue;
+            }
             total += orderDetail.quantity * product.sellPrice;
             baseCost += orderDetail.quantity * product.importPrice;
 
@@ -60,8 +65,6 @@ Order.pre('save', async function (next) {
 
         this.total = total;
         this.profit = total - baseCost;
-
-
         next();
     } catch (error) {
         console.log("Pre save error: ", error);
