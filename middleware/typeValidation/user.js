@@ -21,6 +21,7 @@ const CreateEmployeeSchema = joi.object({
         filename: joi.string(),
     }),
     salary: joi.number().min(0),
+    position: joi.string().valid('sale', 'warehouse', 'admin'),
 });
 const UpdateEmployeeSchema = joi.object({
     name: joi.string().max(25),
@@ -32,7 +33,9 @@ const UpdateEmployeeSchema = joi.object({
         url: joi.string(),
         filename: joi.string(),
     }),
-    salary: joi.number().min(0)
+    salary: joi.number().min(0),
+    position: joi.string().valid('sale', 'warehouse', 'admin'),
+
 });
 
 const ValidateCreateUser = (req, res, next) => {
@@ -55,9 +58,9 @@ const ValidateCreateEmployee = (req, res, next) => {
     const { error } = CreateEmployeeSchema.validate(req.body);
     if (error) {
         console.log("Create employee validation error: ", error);
-        return res.status(400).json({ 
-            error: error.details[0].message, 
-            success: false 
+        return res.status(400).json({
+            error: error.details[0].message,
+            success: false
         });
     }
     next();
@@ -66,9 +69,9 @@ const ValidateUpdateEmployee = (req, res, next) => {
     const { error } = UpdateEmployeeSchema.validate(req.body);
     if (error) {
         console.log("Update validation error: ", error);
-        return res.status(400).json({ 
-            error: error.details[0].message, 
-            success: false 
+        return res.status(400).json({
+            error: error.details[0].message,
+            success: false
         });
     }
     next();
