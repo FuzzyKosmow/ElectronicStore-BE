@@ -20,7 +20,8 @@ function ConvertProductQuery(query) {
         filter.brand = { $regex: query.brand, $options: 'i' };
     }
     if (query.type) {
-        filter.type = query.type;
+        //Trun off case sensitive
+        filter.type = { $regex: query.type, $options: 'i' };
     }
     if (query.productName) {
         //Run regex to find all products that contain the name
@@ -84,6 +85,7 @@ module.exports.getProducts = async (req, res) => {
     }
     try {
         results.results = await Product.find(filter).limit(limit).skip(startIndex).exec();
+        results.totalFilterCount = await Product.countDocuments(filter).exec();
         res.status(200).json({ ...results });
     } catch (error) {
         next(error);
