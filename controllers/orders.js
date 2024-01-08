@@ -51,6 +51,10 @@ async function ConvertOrderQuery(query) {
         //Find employee whose name contains the query
         filter.employeeId = { $in: await Employee.find({ name: { $regex: query.employeeName, $options: 'i' } }).select('_id') };
     }
+    //Find customer phone number
+    if (query.customerPhoneNumber) {
+        filter.customerId = { $in: await Customer.find({ phoneNumber: { $regex: query.customerPhoneNumber, $options: 'i' } }).select('_id') };
+    }
     //Data send will be in DD/MM/YYYY 
     //Date type check to ensure it's in DD/MM/YYYY format
     if (query.orderAfterDate || query.orderBeforeDate || query.orderDate) {
@@ -111,7 +115,7 @@ module.exports.getOrders = async (req, res, next) => {
                 }
             })
             .exec();
-
+        results.totalFilterCount = await Order.countDocuments(filter).exec();
 
         res.status(200).json({ ...results });
     } catch (error) {
