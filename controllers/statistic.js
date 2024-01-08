@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 
 const convertToDate = (date) => {
     const dateParts = date.split('/');
-    return new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+    return new Date(`${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`);
 }
 //Return total customer, total products and total sale has been made (Deliverred)
 
@@ -88,8 +88,7 @@ module.exports.getProfit = async (req, res, next) => {
 
         const start = convertToDate(startDate);
         const end = convertToDate(endDate);
-        console.log("Start date: ", start);
-        console.log("End date: ", end);
+
         if (start > end) {
             return res.status(400).json({ error: "Start date must be before end date" });
         }
@@ -187,7 +186,8 @@ module.exports.getProductSold = async (req, res, next) => {
         if (start > end) {
             return res.status(400).json({ error: "Start date must be before end date" });
         }
-
+        console.log("Start date: ", start);
+        console.log("End date: ", end);
         // Get all orders between two dates
         const orders = await Order.find({
             orderDate: {
