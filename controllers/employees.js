@@ -57,13 +57,19 @@ module.exports.getEmployees = async (req, res, next) => {
         filter = ConvertEmployeeQuery(req.query);
     }
     try {
+        const employees = await Employee.find(filter).skip(startIndex).limit(limit).exec();
+        // results.results = await User.find({ role: 'employee' }).populate('employeeId').find(filter).skip(startIndex).limit(limit).exec();
+        //Go through each employee id. If User has employeeId that is not in employee list, remove it
+        const employeeIds = employees.map(employee => employee._id.toString());
+        results.results = await User.find({ role: 'employee' }).populate('employeeId').exec();
+        results.results = results.results.filter(user => employeeIds.includes(user.employeeId._id.toString()));
 
-        results.results = await Employee.find(filter).limit(limit).skip(startIndex).exec();
         //Exclude admin employee info
         if (adminEmployeeInfoId) {
-            results.results = results.results.filter(employee => employee._id.toString() !== adminEmployeeInfoId);
+            results.results = results.results
+                .filter(employee => employee._id.toString() !== adminEmployeeInfoId);
         }
-
+        results.totalFilterCount = await Employee.countDocuments(filter).exec();
         res.status(200).json({ results });
     } catch (error) {
         next(error);
@@ -83,21 +89,37 @@ module.exports.getEmployee = async (req, res, next) => {
     }
 }
 module.exports.addEmployee = async (req, res, next) => {
-    const { name, phoneNumber, address, gender, birthDate, salary } = req.body;
-
-    // Validate that at least the "name" attribute is present
-    if (!name) {
-        return res.status(400).json({ error: 'Name is required in the request body.', success: false });
+    const { name, phoneNumber, address, gender, birthDate, salary, position } = req.body;
+    const { username, password } = req.body;
+    // Minimum require name, username and password
+    if (!name || !username || !password) {
+        return res.status(400).json({ error: 'Name, username and password are required', success: false });
     }
-    // Create a new employee object with the provided attributes
-    const employee = new Employee({
-        name: name,
-        address: address,
-        phoneNumber: phoneNumber,
-        birthDate: birthDate,
-        gender: gender,
-        salary: salary,
-    });
+    //Check if user exists
+    const userExists = await User.exists({ username: username });
+    if (userExists) {
+        return res.status(400).json({ error: 'Username already exists', success: false });
+    }
+    //Create associate employee
+    const employee = new Employee(
+        {
+            name: name,
+            phoneNumber: phoneNumber,
+            address: address,
+            address: address,
+            gender: gender,
+            birthDate: birthDate,
+            salary: salary,
+            position: position
+        }
+    );
+    //Register user
+    const user = new User({ username, role: 'employee' });
+
+    user.employeeId = employee._id;
+
+
+
     // Check if the file was successfully uploaded
     if (!req.file || !req.file.path || !req.file.filename) {
         console.log("No file uploaded. Avatar will be set to null.");
@@ -117,11 +139,10 @@ module.exports.addEmployee = async (req, res, next) => {
         employee.avatar = avatar;
     }
 
-
-    //Todo: Handle case employee without account
     try {
         // Save the employee to the database
         await employee.save();
+        await User.register(user, password);
 
         // Respond with success message and the created employee
         res.json({ msg: 'Employee added', employee, success: true });
