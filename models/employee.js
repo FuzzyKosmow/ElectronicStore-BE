@@ -11,27 +11,40 @@ const EmployeeSchema = new Schema({
     address: {
         type: String,
         required: false,
+        default: 'N/A',
     },
     phoneNumber: {
         type: String,
         required: false,
+        default: 'N/A',
     },
     birthDate: {
         type: Date,
         required: false,
+        default: Date.now,
     },
     gender: {
         type: String,
         required: false,
+        default: 'N/A',
     },
     avatar: {
         type: Schema.Types.Mixed,
         required: false,
+        default: null,
     },
     salary: {
         type: Number,
         default: 0,
         required: false,
+    },
+    position: {
+        required: false,
+        //Allow sale, warehouse, admin
+        type: String,
+        enum: ['sale', 'warehouse', 'admin'],
+        default: 'sale',
+
     },
 });
 //Post middleware to delete image from cloudinary when employee is deleted.
