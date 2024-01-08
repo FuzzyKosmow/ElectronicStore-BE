@@ -1,6 +1,7 @@
 //Authentication middleware. Check if user is logged in or not . Also additional middleware to check if user is an employee or  admin   
 const roleEnum = require('../enums/roles');
 const User = require('../models/user');
+const Employee = require('../models/employee');
 function authorize(rolesAllowed) {
     return (req, res, next) => {
         // Check if the user contains the required role
@@ -29,12 +30,13 @@ function authorize(rolesAllowed) {
 
     };
 }
-module.exports.getCurrentUser = (req, res, next) => {
+module.exports.getCurrentUser = async (req, res, next) => {
     //If logged in , return username and role.
     console.log(req.body);
     if (req.isAuthenticated()) {
         const { username, role, employeeId } = req.user;
-        return res.status(200).json({ user: { username, role, employeeId } });
+        const position = await Employee.findById(employeeId).select('position');
+        return res.status(200).json({ user: { username, role, employeeId, position } });
     }
     res.status(200).json({ user: null });
 }
