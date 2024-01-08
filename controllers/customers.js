@@ -29,6 +29,8 @@ module.exports.getCustomers = async (req, res, next) => {
     }
     try {
         results.results = await Customer.find(filter).limit(limit).skip(startIndex).exec();
+        //Add a property to show how many resulst that match filter count without limit
+        results.totalFilterCount = await Customer.countDocuments(filter).exec();
         res.status(200).json(results);
     } catch (error) {
         next(error);
