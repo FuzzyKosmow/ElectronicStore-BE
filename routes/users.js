@@ -13,15 +13,16 @@ router.route('/login')
     .get(getCurrentUser)
     .post(usersController.login);
 
+router.route('/change-password/:id')
+    .post(authorize(['admin']), usersController.changePassword);
+
 router.post('/logout', usersController.logout);
 //Register admin only in development
 if (process.env.NODE_ENV !== "production") {
     router.route('/register/admin')
         .post(usersController.registerAdmin);
 };
-router.get('/', (req, res) => {
 
-})
 
 
 module.exports = router;
